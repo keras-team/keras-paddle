@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools >=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "keras-paddle"
+authors = [
+    {name = "PaddlePaddle Developers", email = "paddle-dev@baidu.com"},
+]
+description = "PaddlePaddle backend for Keras"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache License 2.0"}
+dynamic = ["version"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Operating System :: Unix",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development",
+]
+dependencies = [
+    "keras",
+    "numpy",
+    "paddlepaddle",
+]
+
+[project.urls]
+Home = "https://www.paddlepaddle.org.cn/"
+Repository = "https://github.com/keras-team/keras-paddle/"
+
+[tool.setuptools.dynamic]
+version = {attr = "keras_paddle.src.version.__version__"}
+
+[tool.setuptools.package-dir]
+"" = "."
+
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle error
+    "F",  # Pyflakes
+    "I",  # isort
+    "S101",  # flake8-bandit / use of assert detected
+]
+ignore = [
+    "E722",  # do not use bare 'except'
+    "E741",  # ambiguous variable name
+    "E731",  # do not assign a `lambda` expression, use a `def`
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Imports at the top would be circular or unused, they are re-exports.
+"**/__init__.py" = ["E402", "E501", "F401"]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+known-first-party = ["keras", "keras_paddle"]
