@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "keras-paddle"
 authors = [
-    {name = "PaddlePaddle Developers", email = "Paddle-better@baidu.com"},
+    {name = "Keras team", email = "keras-users@googlegroups.com"},
 ]
 description = "PaddlePaddle backend for Keras"
 readme = "README.md"
@@ -31,14 +31,11 @@ dependencies = [
 ]
 
 [project.urls]
-Home = "https://www.paddlepaddle.org.cn/"
+Home = "https://keras.io/"
 Repository = "https://github.com/keras-team/keras-paddle"
 
 [tool.setuptools.dynamic]
 version = {attr = "keras_paddle.src.version.__version__"}
-
-[tool.setuptools.package-dir]
-"" = "."
 
 [tool.ruff]
 line-length = 80
