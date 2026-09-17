@@ -3253,6 +3253,40 @@ def empty_like(x, dtype=None):
     return zeros_like(x, dtype=dtype)
 
 
+def _nextafter_16bit(x1, x2, dtype):
+    """`nextafter` for 16-bit floats, which `paddle.nextafter` rejects.
+
+    A float32 step is smaller than a 16-bit ulp and rounds back to `x1`, so
+    step the bit pattern by one instead. The CPU build has no int16 or
+    float16 `where` kernel, so the work is done in int32.
+    """
+    int_min = -(2**15)
+    inf_bits = 0x7C00 if dtype == paddle.float16 else 0x7F80
+    b1 = paddle.view(x1, "int16").cast("int32")
+    b2 = paddle.view(x2, "int16").cast("int32")
+
+    def to_key(bits):
+        return paddle.where(bits < 0, int_min - bits, bits)
+
+    key1 = to_key(b1)
+    key2 = to_key(b2)
+    step = (key2 > key1).cast("int32") - (key2 < key1).cast("int32")
+    new_key = key1 + step
+    new_bits = paddle.where(new_key < 0, int_min - new_key, new_key)
+    # Both zeros map to key 0: keep -0.0 when arriving from below, and `x1`
+    # when the operands are equal, as `np.nextafter` does.
+    neg_zero = paddle.full([], int_min, dtype="int32")
+    new_bits = paddle.where((new_key == 0) & (key1 < 0), neg_zero, new_bits)
+    new_bits = paddle.where(key1 == key2, b1, new_bits)
+    abs_mask = paddle.full([], 0x7FFF, dtype="int32")
+    is_nan = (paddle.bitwise_and(b1, abs_mask) > inf_bits) | (
+        paddle.bitwise_and(b2, abs_mask) > inf_bits
+    )
+    nan_bits = paddle.full([], inf_bits | 0x200, dtype="int32")
+    new_bits = paddle.where(is_nan, nan_bits, new_bits)
+    return paddle.view(new_bits.cast("int16"), dtype)
+
+
 def nextafter(x1, x2):
     x1 = convert_to_tensor(x1)
     x2 = convert_to_tensor(x2)
@@ -3261,6 +3295,11 @@ def nextafter(x1, x2):
     target = _get_promoted_dtype(x1, x2)
     if target not in float_types:
         target = "float32"
+    if target in ("float16", "bfloat16"):
+        paddle_dtype = to_paddle_dtype(target)
+        return _nextafter_16bit(
+            x1.cast(paddle_dtype), x2.cast(paddle_dtype), paddle_dtype
+        )
     compute_dtype = "float64" if target == "float64" else "float32"
     if standardize_dtype(x1.dtype) != compute_dtype:
         x1 = x1.cast(compute_dtype)
