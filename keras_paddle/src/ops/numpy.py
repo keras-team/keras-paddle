@@ -2023,6 +2023,16 @@ def reciprocal(x):
     return _unary_math_op(paddle.reciprocal, x)
 
 
+def copysign(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
+    target, x1, x2 = _float_binary_target(x1, x2)
+    result = paddle.copysign(x1, x2)
+    if standardize_dtype(result.dtype) != target:
+        result = result.cast(to_paddle_dtype(target))
+    return result
+
+
 def cos(x):
     return _unary_math_op(paddle.cos, x)
 
