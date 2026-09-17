@@ -470,6 +470,39 @@ def power(x1, x2):
     return _binary_op_with_int(paddle.pow, x1, x2, bool_to_int32=True)
 
 
+def _float_binary_target(x1, x2):
+    target, x1, x2 = _cpu_binary_target(x1, x2)
+    int_types = {
+        "bool",
+        "int8",
+        "int16",
+        "int32",
+        "uint8",
+        "uint16",
+        "uint32",
+    }
+    if target in int_types:
+        target = "float32"
+    elif target == "int64":
+        target = "float64"
+    compute_dtype = "float64" if target == "float64" else "float32"
+    if standardize_dtype(x1.dtype) != compute_dtype:
+        x1 = x1.cast(compute_dtype)
+    if standardize_dtype(x2.dtype) != compute_dtype:
+        x2 = x2.cast(compute_dtype)
+    return target, x1, x2
+
+
+def float_power(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
+    target, x1, x2 = _float_binary_target(x1, x2)
+    result = paddle.pow(x1, x2)
+    if standardize_dtype(result.dtype) != target:
+        result = result.cast(to_paddle_dtype(target))
+    return result
+
+
 def maximum(x1, x2):
     return _binary_op_with_int(paddle.maximum, x1, x2)
 

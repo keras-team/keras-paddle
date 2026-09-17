@@ -696,6 +696,19 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_eye_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_eye_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_flip_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_flip_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('bool', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('int16', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('int32', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('int8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('uint16', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('uint32', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('uint32', 'int16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('uint32', 'int32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('uint32', 'int8')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('uint32', 'uint16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('uint32', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('uint32', 'uint8')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('uint8', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_floor_divide_('uint16', 'bool')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_floor_divide_('uint16', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_floor_divide_('uint32', 'bool')
