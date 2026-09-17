@@ -1011,6 +1011,8 @@ def pad(x, pad_width, mode="constant", constant_values=None):
         x = x.cast("float32")
     elif standardize_dtype(x.dtype) in ("int8", "int16", "uint8", "bool"):
         x = x.cast("int32")
+    if len(pad_width) == 1:
+        pad_width = [pad_width[0]] * x.ndim
     pad_list = []
     for left, right in pad_width:
         pad_list.extend([left, right])
