@@ -646,6 +646,7 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_('uint32', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_('uint32', 'uint8')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_('uint8', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_corrcoef_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_cov_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_correlate_('uint16', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_correlate_('uint32', 'bool')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_correlate_('uint32', 'int16')

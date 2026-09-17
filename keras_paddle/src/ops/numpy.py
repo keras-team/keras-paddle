@@ -3892,3 +3892,25 @@ def vander(x, N=None, increasing=False):
     if result_dt != orig_dtype:
         result = result.cast(to_paddle_dtype(orig_dtype))
     return result
+
+
+def cov(x):
+    x = convert_to_tensor(x)
+    if x.ndim > 2:
+        raise ValueError(
+            "Input tensor must have at most 2 dimensions. "
+            f"Received: x.shape={tuple(x.shape)}"
+        )
+    dtype = standardize_dtype(x.dtype)
+    if dtype in ("int64", "float64"):
+        dtype = "float64"
+    elif dtype not in ("float16", "bfloat16"):
+        dtype = floatx()
+    if x.ndim == 0:
+        return paddle.full([], float("nan"), dtype=to_paddle_dtype(dtype))
+    # `paddle.linalg.cov` has no integer or 16-bit CPU kernels.
+    compute_dtype = "float64" if dtype == "float64" else "float32"
+    result = paddle.linalg.cov(x.cast(compute_dtype))
+    if standardize_dtype(result.dtype) != dtype:
+        result = result.cast(to_paddle_dtype(dtype))
+    return result
