@@ -306,6 +306,49 @@ def scale_and_translate(
 
 
 def sobel_edges(images, data_format=None):
-    raise NotImplementedError(
-        "`sobel_edges` is not supported with paddle backend"
+    data_format = standardize_data_format(data_format)
+    images = convert_to_tensor(images)
+    dtype = standardize_dtype(images.dtype)
+
+    # Ensure images are in NCHW format for convolution
+    if data_format == "channels_last":
+        images_nchw = paddle.transpose(images, [0, 3, 1, 2])
+    else:
+        images_nchw = images
+
+    channels = images_nchw.shape[1]
+
+    # Paddle CPU only registers the `depthwise_conv2d` kernel for
+    # float32 and float64, so compute in float32 and cast back.
+    compute_dtype = dtype if dtype not in ("float16", "bfloat16") else "float32"
+    if dtype != compute_dtype:
+        images_nchw = images_nchw.cast("float32")
+
+    # Sobel kernels
+    sobel_x = paddle.to_tensor(
+        [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],
+        dtype=compute_dtype,
     )
+    sobel_y = paddle.to_tensor(
+        [[-1, -2, -1], [0, 0, 0], [1, 2, 1]],
+        dtype=compute_dtype,
+    )
+
+    # Reshape for depthwise conv: (out_channels, in_channels/groups, H, W)
+    kernel_x = sobel_x.reshape([1, 1, 3, 3]).tile([channels, 1, 1, 1])
+    kernel_y = sobel_y.reshape([1, 1, 3, 3]).tile([channels, 1, 1, 1])
+
+    # Apply depthwise convolutions
+    edges_x = F.conv2d(images_nchw, kernel_x, padding=1, groups=channels)
+    edges_y = F.conv2d(images_nchw, kernel_y, padding=1, groups=channels)
+
+    # Stack to get (N, C, H, W, 2)
+    edges = paddle.stack([edges_y, edges_x], axis=-1)
+
+    if data_format == "channels_last":
+        # Convert to NHWC format: (N, C, H, W, 2) -> (N, H, W, C, 2)
+        edges = paddle.transpose(edges, [0, 2, 3, 1, 4])
+
+    if dtype != compute_dtype:
+        edges = edges.cast(to_paddle_dtype(dtype))
+    return edges

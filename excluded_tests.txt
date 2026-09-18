@@ -212,15 +212,6 @@ keras/src/ops/image_test.py::ImageOpsDtypeTest::test_elastic_transform_float32
 keras/src/layers/preprocessing/image_preprocessing/random_elastic_transform_test.py::RandomElasticTransformTest::test_layer
 keras/src/layers/preprocessing/image_preprocessing/random_elastic_transform_test.py::RandomElasticTransformTest::test_random_elastic_transform_basic
 
-# `sobel_edges`
-keras/src/ops/image_test.py::SobelEdgesTest::test_sobel_edges_detects_horizontal_edge
-keras/src/ops/image_test.py::SobelEdgesTest::test_sobel_edges_detects_vertical_edge
-keras/src/ops/image_test.py::SobelEdgesTest::test_sobel_edges_multi_channel
-keras/src/ops/image_test.py::SobelEdgesTest::test_sobel_edges_shape_channels_first
-keras/src/ops/image_test.py::SobelEdgesTest::test_sobel_edges_shape_channels_last
-keras/src/ops/image_test.py::SobelEdgesTest::test_sobel_edges_single_channel
-keras/src/ops/image_test.py::SobelEdgesTest::test_sobel_edges_uniform_image
-
 ########################################################################
 # `resize` limitations.
 # Paddle has no Lanczos interpolation kernel, its CPU build does not
