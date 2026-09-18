@@ -8,72 +8,6 @@
 # Image ops that are not implemented by the paddle backend.
 ########################################################################
 
-# `map_coordinates`
-keras/src/ops/image_test.py::ImageOpsBehaviorTests::test_map_coordinates_invalid_coordinates_rank
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_0_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_0_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_0_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_0_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_0_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_1_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_1_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_1_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_1_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_1_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_0_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_0_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_0_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_0_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_0_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_1_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_1_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_1_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_1_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_1_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_0_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_0_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_0_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_0_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_0_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_1_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_1_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_1_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_1_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_1_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_0_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_0_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_0_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_0_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_0_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_1_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_1_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_1_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_1_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_1_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_0_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_0_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_0_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_0_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_0_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_1_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_1_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_1_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_1_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_1_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_0_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_0_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_0_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_0_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_0_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_1_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_1_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_1_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_1_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_1_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_constant_padding
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_map_coordinates_bfloat16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_map_coordinates_float16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_map_coordinates_float32
 
 # `affine_transform`
 keras/src/layers/preprocessing/image_preprocessing/aug_mix_test.py::AugMixTest::test_layer
@@ -151,22 +85,9 @@ keras/src/layers/preprocessing/data_layer_test.py::DataLayerTest::test_layer
 # float16 add kernel is missing on the Paddle CPU backend.
 keras/src/layers/preprocessing/image_preprocessing/random_color_jitter_test.py::RandomColorJitterTest::test_layer
 
-# `perspective_transform`
-keras/src/ops/image_test.py::ImageOpsBehaviorTests::test_perspective_transform_invalid_images_rank
-keras/src/ops/image_test.py::ImageOpsBehaviorTests::test_perspective_transform_invalid_points_rank
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_perspective_transform_bfloat16_no_crash
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_perspective_transform_bilinear
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_perspective_transform_nearest
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_perspective_transform_bfloat16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_perspective_transform_float16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_perspective_transform_float32
+# RandomPerspective's test_layer runs its transformation arithmetic in
+# float16, whose `multiply` kernel is missing on the Paddle CPU backend.
 keras/src/layers/preprocessing/image_preprocessing/random_perspective_test.py::RandomPerspectiveTest::test_layer
-keras/src/layers/preprocessing/image_preprocessing/random_perspective_test.py::RandomPerspectiveTest::test_random_perspective_basic
-keras/src/layers/preprocessing/image_preprocessing/random_perspective_test.py::RandomPerspectiveTest::test_random_perspective_no_op
-
-# `compute_homography_matrix`
-keras/src/layers/preprocessing/image_preprocessing/random_perspective_test.py::RandomPerspectiveTest::test_random_perspective_bounding_boxes_with_large_scale
-keras/src/layers/preprocessing/image_preprocessing/random_perspective_test.py::RandomPerspectiveTest::test_random_perspective_bounding_boxes_with_small_scale
 
 # `gaussian_blur`
 # Even kernel sizes are not supported by the paddle backend.
