@@ -81,14 +81,6 @@ keras/src/layers/preprocessing/image_preprocessing/random_perspective_test.py::R
 # Even kernel sizes are not supported by the paddle backend.
 keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_gaussian_blur_even_kernel_size
 
-# `elastic_transform`
-keras/src/ops/image_test.py::ImageOpsBehaviorTests::test_elastic_transform_invalid_images_rank
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_elastic_transform
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_elastic_transform_bfloat16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_elastic_transform_float16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_elastic_transform_float32
-keras/src/layers/preprocessing/image_preprocessing/random_elastic_transform_test.py::RandomElasticTransformTest::test_layer
-keras/src/layers/preprocessing/image_preprocessing/random_elastic_transform_test.py::RandomElasticTransformTest::test_random_elastic_transform_basic
 
 ########################################################################
 # `resize` limitations.
