@@ -271,9 +271,76 @@ def compute_homography_matrix(start_points, end_points):
 def gaussian_blur(
     images, kernel_size=(3, 3), sigma=(1.0, 1.0), data_format=None
 ):
-    raise NotImplementedError(
-        "`gaussian_blur` is not supported with paddle backend"
+    def _get_gaussian_kernel1d(size, sigma):
+        x = paddle.arange(size, dtype=compute_dtype) - (size - 1) / 2
+        kernel1d = paddle.exp(-0.5 * (x / sigma) ** 2)
+        return kernel1d / paddle.sum(kernel1d)
+
+    data_format = standardize_data_format(data_format)
+    images = convert_to_tensor(images)
+    input_dtype = standardize_dtype(images.dtype)
+    # The Paddle CPU depthwise_conv2d kernel is only registered for
+    # float32 and float64.
+    compute_dtype = input_dtype
+    if input_dtype in ("float16", "bfloat16"):
+        compute_dtype = "float32"
+
+    if len(images.shape) not in (3, 4):
+        raise ValueError(
+            "Invalid images rank: expected rank 3 (single image) "
+            "or rank 4 (batch of images). Received input with shape: "
+            f"images.shape={images.shape}"
+        )
+
+    kernel_size = convert_to_tensor(kernel_size)
+    sigma = convert_to_tensor(sigma, dtype=compute_dtype)
+
+    # Sizes can be tensors; resolve them to ints before indexing.
+    kernel_height = int(kernel_size[0])
+    kernel_width = int(kernel_size[1])
+    if kernel_height % 2 == 0 or kernel_width % 2 == 0:
+        raise NotImplementedError(
+            "gaussian_blur with an even kernel size is not supported by "
+            "the paddle backend."
+        )
+
+    need_squeeze = False
+    if images.ndim == 3:
+        images = images.unsqueeze(0)
+        need_squeeze = True
+
+    if data_format == "channels_last":
+        images = paddle.transpose(images, [0, 3, 1, 2])
+    num_channels = images.shape[1]
+
+    if input_dtype != compute_dtype:
+        images = images.cast("float32")
+
+    kernel1d_x = _get_gaussian_kernel1d(kernel_height, sigma[0])
+    kernel1d_y = _get_gaussian_kernel1d(kernel_width, sigma[1])
+    kernel = paddle.outer(kernel1d_y, kernel1d_x)
+    kernel = kernel.reshape([1, 1, kernel_height, kernel_width])
+    kernel = kernel.tile([num_channels, 1, 1, 1]).astype(compute_dtype)
+
+    # Odd kernel: Paddle's SAME pads with (k - 1) // 2 on each side,
+    # which is the same as what the reference implementations use.
+    blurred_images = F.conv2d(
+        images,
+        kernel,
+        stride=1,
+        padding=kernel_height // 2,
+        groups=num_channels,
     )
+
+    if data_format == "channels_last":
+        blurred_images = paddle.transpose(blurred_images, [0, 2, 3, 1])
+
+    if need_squeeze:
+        blurred_images = blurred_images.squeeze(0)
+
+    if input_dtype != compute_dtype:
+        blurred_images = blurred_images.cast(to_paddle_dtype(input_dtype))
+    return blurred_images
 
 
 def elastic_transform(

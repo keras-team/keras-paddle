@@ -194,14 +194,8 @@ keras/src/layers/preprocessing/image_preprocessing/random_perspective_test.py::R
 keras/src/layers/preprocessing/image_preprocessing/random_perspective_test.py::RandomPerspectiveTest::test_random_perspective_bounding_boxes_with_small_scale
 
 # `gaussian_blur`
-keras/src/ops/image_test.py::ImageOpsBehaviorTests::test_gaussian_blur_invalid_images_rank
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_gaussian_blur
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_gaussian_blur_bfloat16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_gaussian_blur_float16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_gaussian_blur_float32
-keras/src/layers/preprocessing/image_preprocessing/random_gaussian_blur_test.py::RandomGaussianBlurTest::test_layer
-keras/src/layers/preprocessing/image_preprocessing/random_gaussian_blur_test.py::RandomGaussianBlurTest::test_random_erasing_basic
-keras/src/layers/preprocessing/image_preprocessing/random_gaussian_blur_test.py::RandomGaussianBlurTest::test_random_erasing_no_op
+# Even kernel sizes are not supported by the paddle backend.
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_gaussian_blur_even_kernel_size
 
 # `elastic_transform`
 keras/src/ops/image_test.py::ImageOpsBehaviorTests::test_elastic_transform_invalid_images_rank
