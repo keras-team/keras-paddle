@@ -1,5 +1,6 @@
 import builtins
 import contextlib
+import functools
 import os
 import weakref
 
@@ -7,11 +8,13 @@ import ml_dtypes
 import numpy as np
 import paddle
 import paddle.nn
+import paddle.nn.functional as F
 
 from keras.src import tree
 from keras.src.backend.common import KerasVariable as Variable
 from keras.src.backend.common import global_state
 from keras.src.backend.common import standardize_dtype
+from keras.src.backend.common.backend_utils import slice_along_axis
 from keras.src.backend.common.dtypes import result_type
 from keras.src.backend.common.keras_tensor import KerasTensor
 from keras.src.backend.common.stateless_scope import StatelessScope
@@ -377,9 +380,127 @@ def scan(f, init, xs=None, length=None, reverse=False, unroll=1):
 
 
 def associative_scan(f, elems, reverse=False, axis=0):
-    raise NotImplementedError(
-        "`associative_scan` is not supported with paddle backend"
-    )
+    # Ref: jax.lax.associative_scan
+    if not callable(f):
+        raise TypeError(f"`f` should be a callable. Received: f={f}")
+    elems_flat = tree.flatten(elems)
+    elems_flat = [convert_to_tensor(elem) for elem in elems_flat]
+    if reverse:
+        elems_flat = [paddle.flip(elem, [axis]) for elem in elems_flat]
+
+    def _combine(a_flat, b_flat):
+        a = tree.pack_sequence_as(elems, a_flat)
+        b = tree.pack_sequence_as(elems, b_flat)
+        c = f(a, b)
+        c_flat = tree.flatten(c)
+        return c_flat
+
+    num_elems = int(elems_flat[0].shape[axis])
+    if not all(int(elem.shape[axis]) == num_elems for elem in elems_flat[1:]):
+        raise ValueError(
+            "Array inputs to associative_scan must have the same "
+            "first dimension. (saw: {})".format(
+                [elem.shape for elem in elems_flat]
+            )
+        )
+
+    def _interleave(a, b, axis):
+        """Given two Tensors of static shape, interleave them along axis."""
+        if not (
+            a.shape[axis] == b.shape[axis] or a.shape[axis] == b.shape[axis] + 1
+        ):
+            raise ValueError(
+                "Shapes are incompatible for associative_scan interleaving. "
+                f"a.shape[{axis}]={a.shape[axis]}, "
+                f"b.shape[{axis}]={b.shape[axis]}"
+            )
+
+        # we want to get a: [a1, a2], b: [b1, b2]
+        # to a: [a1, 0, a2, 0], b: [0, b1, 0, b2]
+        a_shape = list(a.shape)
+        a_shape[axis] = a.shape[axis] * 2 - 1
+
+        b_shape = list(b.shape)
+        b_shape[axis] = b.shape[axis] * 2 - 1
+
+        a_dil = paddle.zeros(a_shape, dtype=a.dtype)
+        slice_along_axis(a_dil, 0, None, 2, axis).copy_(a)
+
+        b_dil = paddle.zeros(b_shape, dtype=b.dtype)
+        slice_along_axis(b_dil, 0, None, 2, axis).copy_(b)
+
+        # Paddle's `F.pad` reads the per-dimension `(left, right)` pairs in
+        # ascending dimension order, while the torch reference flips the list
+        # to start from the last dimension.
+        a_pad = [[0, 0] for _ in range(a.ndim)]
+        a_pad[axis][-1] = 1 if a.shape[axis] == b.shape[axis] else 0
+
+        b_pad = [[0, 0] for _ in range(b.ndim)]
+        b_pad[axis] = [1, 0] if a.shape[axis] == b.shape[axis] else [1, 1]
+
+        if a.dtype == paddle.bool:
+            # `pad` has no bool kernel; go through int32.
+            a_dil = a_dil.cast("int32")
+            b_dil = b_dil.cast("int32")
+
+        op = paddle.logical_or if a.dtype == paddle.bool else paddle.add
+        return op(
+            F.pad(a_dil, tree.flatten(a_pad)),
+            F.pad(b_dil, tree.flatten(b_pad)),
+        )
+
+    def _scan(elems):
+        num_elems = elems[0].shape[axis]
+        if num_elems < 2:
+            return elems
+
+        reduced_elems = _combine(
+            [
+                slice_along_axis(elem, 0, -1, step=2, axis=axis)
+                for elem in elems
+            ],
+            [
+                slice_along_axis(elem, 1, None, step=2, axis=axis)
+                for elem in elems
+            ],
+        )
+
+        odd_elems = _scan(reduced_elems)
+        if num_elems % 2 == 0:
+            even_elems = _combine(
+                [slice_along_axis(e, 0, -1, axis=axis) for e in odd_elems],
+                [
+                    slice_along_axis(e, 2, None, step=2, axis=axis)
+                    for e in elems
+                ],
+            )
+        else:
+            even_elems = _combine(
+                odd_elems,
+                [
+                    slice_along_axis(e, 2, None, step=2, axis=axis)
+                    for e in elems
+                ],
+            )
+
+        even_elems = [
+            paddle.concat(
+                [slice_along_axis(elem, 0, 1, axis=axis), result],
+                axis=axis,
+            )
+            for (elem, result) in zip(elems, even_elems)
+        ]
+        return list(
+            builtins.map(
+                functools.partial(_interleave, axis=axis), even_elems, odd_elems
+            )
+        )
+
+    scans = _scan(elems_flat)
+    if reverse:
+        scans = [paddle.flip(scanned, [axis]) for scanned in scans]
+
+    return tree.pack_sequence_as(elems, scans)
 
 
 def scatter(indices, values, shape):
