@@ -2,6 +2,7 @@ import numpy as np
 import paddle
 import paddle.nn.functional as F
 
+from keras.src.backend.common.dtypes import result_type
 from keras.src.backend.common.variables import standardize_dtype
 from keras.src.backend.config import standardize_data_format
 from keras_paddle.src.ops.core import convert_to_tensor
@@ -26,6 +27,122 @@ UNSUPPORTED_INTERPOLATIONS = (
     "lanczos3",
     "lanczos5",
 )
+
+
+def _is_integer(dtype):
+    return "int" in standardize_dtype(dtype) or dtype == "bool"
+
+
+SCALE_AND_TRANSLATE_METHODS = {
+    "linear",
+    "bilinear",
+    "trilinear",
+    "cubic",
+    "bicubic",
+    "tricubic",
+    "lanczos3",
+    "lanczos5",
+}
+
+
+def _fill_triangle_kernel(x):
+    return paddle.maximum(paddle.zeros_like(x), 1 - paddle.abs(x))
+
+
+def _fill_keys_cubic_kernel(x):
+    out = ((1.5 * x - 2.5) * x) * x + 1.0
+    out = paddle.where(x >= 1.0, ((-0.5 * x + 2.5) * x - 4.0) * x + 2.0, out)
+    return paddle.where(x >= 2.0, 0.0, out)
+
+
+def _fill_lanczos_kernel(radius, x):
+    y = radius * paddle.sin(paddle.pi * x) * paddle.sin(paddle.pi * x / radius)
+    out = paddle.where(
+        x > 1e-3,
+        paddle.divide(
+            y,
+            paddle.where(x != 0, paddle.pi**2 * x**2, paddle.ones_like(x)),
+        ),
+        paddle.ones_like(x),
+    )
+    return paddle.where(x > radius, 0.0, out)
+
+
+def _compute_weight_mat(
+    input_size, output_size, scale, translation, kernel, antialias
+):
+    inv_scale = 1.0 / scale
+    kernel_scale = (
+        paddle.maximum(inv_scale, paddle.ones_like(inv_scale))
+        if antialias
+        else paddle.ones_like(inv_scale)
+    )
+    sample_f = (
+        (paddle.arange(output_size, dtype=scale.dtype) + 0.5) * inv_scale
+        - translation * inv_scale
+        - 0.5
+    )
+    x = (
+        paddle.abs(
+            sample_f.unsqueeze(0)
+            - paddle.arange(input_size, dtype=sample_f.dtype).unsqueeze(1)
+        )
+        / kernel_scale
+    )
+    weights = kernel(x)
+    total_weight_sum = paddle.sum(weights, axis=0, keepdim=True)
+    weights = paddle.where(
+        paddle.abs(total_weight_sum) > 1000.0 * float(np.finfo(np.float32).eps),
+        paddle.divide(
+            weights,
+            paddle.where(
+                total_weight_sum != 0,
+                total_weight_sum,
+                paddle.ones_like(total_weight_sum),
+            ),
+        ),
+        paddle.zeros_like(weights),
+    )
+    in_bounds = paddle.logical_and(
+        sample_f >= -0.5, sample_f <= input_size - 0.5
+    ).unsqueeze(0)
+    return paddle.where(in_bounds, weights, paddle.zeros_like(weights))
+
+
+def _scale_and_translate(
+    x, output_shape, spatial_dims, scale, translation, kernel, antialias
+):
+    input_shape = x.shape
+
+    if len(spatial_dims) == 0:
+        return x
+
+    input_dtype = standardize_dtype(x.dtype)
+    # Paddle has no CPU kernels for `divide`/`sin`/... on float16 and
+    # bfloat16, so the resampling math runs in float32 and the result is
+    # cast back at the end.
+    use_rounding = _is_integer(input_dtype)
+    if use_rounding or input_dtype in ("float16", "bfloat16"):
+        output = x.cast("float32")
+        compute_scale = scale.cast("float32")
+        compute_translation = translation.cast("float32")
+    else:
+        output = x.clone()
+        compute_scale = scale
+        compute_translation = translation
+
+    for i, d in enumerate(spatial_dims):
+        d = d % x.ndim
+        m, n = input_shape[d], output_shape[d]
+        w = _compute_weight_mat(
+            m, n, compute_scale[i], compute_translation[i], kernel, antialias
+        ).cast(output.dtype)
+        output = paddle.tensordot(output, w, axes=[(d,), (0,)])
+        output = paddle.moveaxis(output, -1, d)
+
+    if use_rounding:
+        output = paddle.clip(paddle.round(output), x.min(), x.max())
+    return output.cast(x.dtype)
 
 
 def _dtype_limits(dtype):
@@ -470,8 +587,36 @@ def scale_and_translate(
     method,
     antialias=True,
 ):
-    raise NotImplementedError(
-        "`scale_and_translate` is not supported with paddle backend"
+    if method not in SCALE_AND_TRANSLATE_METHODS:
+        raise ValueError(
+            "Invalid value for argument `method`. Expected of one "
+            f"{SCALE_AND_TRANSLATE_METHODS}. Received: method={method}"
+        )
+    if method in ("linear", "bilinear", "trilinear", "triangle"):
+        method = "linear"
+    elif method in ("cubic", "bicubic", "tricubic"):
+        method = "cubic"
+
+    images = convert_to_tensor(images)
+    scale = convert_to_tensor(scale)
+    translation = convert_to_tensor(translation)
+    kernel = {
+        "linear": _fill_triangle_kernel,
+        "cubic": _fill_keys_cubic_kernel,
+        "lanczos3": lambda x: _fill_lanczos_kernel(3.0, x),
+        "lanczos5": lambda x: _fill_lanczos_kernel(5.0, x),
+    }[method]
+    dtype = result_type(scale.dtype, translation.dtype)
+    scale = scale.cast(to_paddle_dtype(dtype))
+    translation = translation.cast(to_paddle_dtype(dtype))
+    return _scale_and_translate(
+        images,
+        output_shape,
+        spatial_dims,
+        scale,
+        translation,
+        kernel,
+        antialias,
     )
 
 

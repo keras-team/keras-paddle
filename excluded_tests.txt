@@ -131,18 +131,6 @@ keras/src/layers/preprocessing/image_preprocessing/random_zoom_test.py::RandomZo
 keras/src/layers/preprocessing/image_preprocessing/random_zoom_test.py::RandomZoomTest::test_random_zoom_random_zoom_out_4_by_6
 keras/src/layers/preprocessing/image_preprocessing/random_zoom_test.py::RandomZoomTest::test_random_zoom_random_zoom_out_tuple_factor
 
-# `scale_and_translate`
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_cubic_false
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_cubic_true
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_lanczos3_false
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_lanczos3_true
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_lanczos5_false
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_lanczos5_true
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_linear_false
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_linear_true
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_scale_and_translate_bfloat16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_scale_and_translate_float16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_scale_and_translate_float32
 
 # `rgb_to_hsv`
 keras/src/layers/preprocessing/data_layer_test.py::DataLayerTest::test_grain_compatibility
