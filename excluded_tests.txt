@@ -290,7 +290,6 @@ keras/src/losses/losses_test.py::BinaryFocalCrossentropyTest::test_dtype_arg
 keras/src/losses/losses_test.py::CategoricalCrossentropyTest::test_dtype_arg
 keras/src/losses/losses_test.py::CategoricalFocalCrossentropyTest::test_dtype_arg
 keras/src/losses/losses_test.py::CircleTest::test_dtype_arg
-keras/src/losses/losses_test.py::CosineSimilarityTest::test_dtype_arg
 keras/src/losses/losses_test.py::DiceTest::test_dtype_arg
 keras/src/losses/losses_test.py::KLDivergenceTest::test_dtype_arg
 keras/src/losses/losses_test.py::LogCoshTest::test_dtype_arg
