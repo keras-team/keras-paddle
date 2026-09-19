@@ -224,14 +224,10 @@ keras/src/layers/reshaping/up_sampling2d_test.py::UpSampling2dTest::test_upsampl
 
 ########################################################################
 # Other ops that are not implemented by the paddle backend.
-# `associative_scan`, and the `beam_search` strategy of `ctc_decode`.
+# `associative_scan`.
 ########################################################################
 keras/src/ops/core_test.py::CoreOpsBehaviorTests::test_associative_scan_invalid_arguments
 keras/src/ops/core_test.py::CoreOpsCorrectnessTest::test_associative_scan
-keras/src/ops/nn_test.py::NNOpsCorrectnessTest::test_ctc_decode
-keras/src/ops/nn_test.py::NNOpsDtypeTest::test_ctc_decode_bfloat16
-keras/src/ops/nn_test.py::NNOpsDtypeTest::test_ctc_decode_float16
-keras/src/ops/nn_test.py::NNOpsDtypeTest::test_ctc_decode_float32
 
 ########################################################################
 # Missing float16 CPU kernels.

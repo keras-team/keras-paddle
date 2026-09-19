@@ -1,3 +1,4 @@
+import builtins
 import functools
 
 import numpy as np
@@ -827,6 +828,262 @@ def batch_normalization(
     return x_norm
 
 
+# `_unique_padded`; int64 overflow during exponentiation is intentional
+# since we only need a deterministic path -> hash mapping.
+_KNUTH_HASH_CONSTANT = 2654435769
+
+
+def _ctc_beam_search_decode(
+    inputs,
+    sequence_lengths,
+    beam_width=100,
+    top_paths=1,
+    mask_index=None,
+):
+    """Beam search CTC decoding for the paddle backend.
+
+    Direct port of `keras/src/backend/torch/ops/nn.py::_ctc_beam_search_decode`.
+    The semantics (tie-breaking, log-space score merging, blank/emit score
+    tracks) match the reference implementation; correctness is prioritized
+    over throughput, so the batch dimension is iterated in Python.
+    """
+    inputs = convert_to_tensor(inputs)
+    sequence_lengths = convert_to_tensor(sequence_lengths, dtype="int32")
+
+    batch_size, max_seq_len, num_classes = inputs.shape
+    inputs = F.log_softmax(inputs, axis=-1)
+
+    if mask_index is None:
+        mask_index = num_classes - 1
+
+    # Tie-breaking: `paddle.argsort` does not accept an `order` parameter,
+    # so the reference impl flips classes so the desired ordering falls out
+    # of the default ascending argsort. We mirror that here for parity.
+    inputs = paddle.flip(inputs, [2])
+    mask_index = num_classes - mask_index - 1
+
+    _pad = -1
+
+    # Precompute per-batch seqlen masks on CPU so the inner loop avoids a
+    # GPU->CPU sync on every timestep.
+    seqlen_cpu = sequence_lengths.numpy().tolist()
+    num_init_paths = builtins.min(num_classes, beam_width)
+
+    paths_per_batch = []
+    scores_per_batch = []
+    for b in range(batch_size):
+        x = inputs[b]
+        seq_len_b = int(seqlen_cpu[b])
+
+        init_paths = paddle.full(
+            (2 * beam_width, max_seq_len), _pad, dtype="int32"
+        )
+
+        max_classes = paddle.argsort(x[0], stable=True)[-num_init_paths:]
+        init_classes = paddle.where(
+            max_classes == mask_index,
+            paddle.to_tensor(_pad, dtype="int32"),
+            max_classes.astype("int32"),
+        )
+        init_paths[:num_init_paths, 0] = init_classes
+
+        init_scores = paddle.full(
+            (2 * beam_width,), float("-inf"), dtype=inputs.dtype
+        )
+        init_scores[:num_init_paths] = x[0][max_classes]
+
+        paths = init_paths
+        scores = init_scores
+        masked = paths[:, 0] == _pad
+
+        # Only iterate timesteps within this sequence's length.
+        for t in range(1, seq_len_b):
+            paths, scores, masked = _ctc_beam_extend(
+                paths, scores, masked, x[t], num_classes, mask_index, _pad
+            )
+            paths, scores, masked = _ctc_beam_prune(
+                paths, scores, masked, num_classes, beam_width, _pad
+            )
+
+        # Final dedup + top_paths selection.
+        paths_unique, inverse = _unique_padded(
+            paths, size=2 * num_classes * beam_width, pad=_pad
+        )
+        scores = _merge_scores(inverse, scores, paths_unique.shape[0])
+
+        top_indices = paddle.argsort(scores, stable=True)[-top_paths:].flip(0)
+        paths_per_batch.append(paths_unique[top_indices])
+        scores_per_batch.append(scores[top_indices])
+
+    paths = paddle.stack(paths_per_batch, axis=0)
+    scores = paddle.stack(scores_per_batch, axis=0)
+
+    # Convert classes back from the flipped representation.
+    paths = paddle.where(
+        paths == _pad,
+        paddle.to_tensor(_pad, dtype="int32"),
+        num_classes - paths - 1,
+    )
+    paths = paths.transpose([1, 0, 2])
+    return paths, scores
+
+
+def _ctc_beam_extend(paths, scores, masked, x, num_classes, mask_index, _pad):
+    """Extend each beam with every possible class for a single timestep."""
+    paths = paddle.repeat_interleave(paths, num_classes, axis=0)
+    scores = paddle.repeat_interleave(scores, num_classes)
+    # `repeat_interleave` has no bool CPU kernel; go through int32.
+    masked = paddle.repeat_interleave(
+        masked.astype("int32"), num_classes
+    ).astype("bool")
+
+    is_pad = paths == _pad
+    path_tail_index = paddle.argmax(is_pad.cast("int32"), axis=1)
+    arange = paddle.arange(paths.shape[0])
+    path_tails = paths[arange, path_tail_index - 1]
+    path_tails = paddle.where(
+        path_tail_index == 0,
+        paddle.to_tensor(_pad, dtype="int32"),
+        path_tails,
+    )
+
+    classes = paddle.arange(num_classes, dtype="int32")
+    classes = paddle.where(
+        paddle.arange(num_classes, dtype="int32") == mask_index,
+        paddle.to_tensor(_pad, dtype="int32"),
+        classes,
+    )
+    classes = paddle.tile(classes, [paths.shape[0] // num_classes])
+
+    prev_masked = masked
+    masked = classes == _pad
+
+    masked_repeat = paddle.logical_and(
+        paddle.logical_not(prev_masked), path_tails == classes
+    )
+    classes = paddle.where(
+        masked_repeat,
+        paddle.to_tensor(_pad, dtype="int32"),
+        classes,
+    )
+    paths = paddle.index_put(
+        paths,
+        (arange, path_tail_index),
+        classes,
+    )
+
+    scores = scores + paddle.tile(x, [paths.shape[0] // num_classes])
+    return paths, scores, masked
+
+
+def _ctc_beam_prune(paths, scores, masked, num_classes, beam_width, _pad):
+    """Dedup + score-merge + keep top `beam_width` (emit, blank) tracks."""
+    paths_unique, inverse = _unique_padded(
+        paths, size=2 * num_classes * beam_width, pad=_pad
+    )
+
+    emit_scores = paddle.where(
+        masked, paddle.full([1], float("-inf"), dtype=scores.dtype), scores
+    )
+    mask_scores = paddle.where(
+        masked, scores, paddle.full([1], float("-inf"), dtype=scores.dtype)
+    )
+
+    n_uniques = paths_unique.shape[0]
+    emit_scores = _merge_scores(inverse, emit_scores, n_uniques)
+    mask_scores = _merge_scores(inverse, mask_scores, n_uniques)
+
+    total_scores = paddle.logaddexp(emit_scores, mask_scores)
+    # `logaddexp(-inf, -inf)` yields NaN here while the reference backends
+    # return `-inf`; NaN sorts as the largest entries, so clamp it back to
+    # `-inf` to keep fully-masked rows at the end of the beam.
+    total_scores = paddle.where(
+        paddle.isnan(total_scores),
+        paddle.full([1], float("-inf"), dtype=total_scores.dtype),
+        total_scores,
+    )
+    top_indices = paddle.argsort(total_scores, stable=True)[-beam_width:]
+
+    paths_top = paths_unique[top_indices]
+    emit_scores_top = emit_scores[top_indices]
+    mask_scores_top = mask_scores[top_indices]
+
+    paths = paddle.tile(paths_top, [2, 1])
+    scores = paddle.concat([emit_scores_top, mask_scores_top])
+    masked_out = paddle.concat(
+        [
+            paddle.zeros([beam_width], dtype="bool"),
+            paddle.ones([beam_width], dtype="bool"),
+        ]
+    )
+    return paths, scores, masked_out
+
+
+def _unique_padded(paths, size, pad):
+    """Hash-based row-dedup, padded to a fixed leading size with `pad` rows.
+
+    Mirrors `jax.numpy.unique(..., size=size, fill_value=pad, axis=0,
+    return_inverse=True)` in observable behavior: the unique rows come
+    first, followed by `(size - n_unique)` rows filled with `pad`, and
+    `inverse` maps each input row to its index in the unique output.
+
+    Internally avoids `paddle.unique(axis=0)` sorting the full row tensor
+    every call by hashing each path to int64 and deduplicating along that
+    1D axis. Collisions are detected by an explicit row-equality check on
+    adjacent same-hash entries, so correctness does not rely on a
+    collision-free hash.
+    """
+    n, t = paths.shape
+
+    # Polynomial hash. Shift values to non-negative so all-`pad` rows don't
+    # collapse to zero. Adjacent same-hash rows are verified for equality
+    # below, so collisions stay correct. int64 wrap-around (mod 2^64) is
+    # deterministic, so a `cumprod` power table is equivalent to the torch
+    # reference's element-wise exponentiation.
+    p = paths.astype("int64") + 1
+    powers = paddle.cumprod(
+        paddle.concat(
+            [
+                paddle.ones([1], dtype="int64"),
+                paddle.full([t - 1], _KNUTH_HASH_CONSTANT, dtype="int64"),
+            ]
+        ),
+        0,
+    )
+    hashes = (p * powers).sum(axis=1)
+
+    order = paddle.argsort(hashes, stable=True)
+    sorted_paths = paths[order]
+    sorted_hashes = hashes[order]
+
+    adj_hash_eq = sorted_hashes[1:] == sorted_hashes[:-1]
+    adj_row_eq = paddle.all(sorted_paths[1:] == sorted_paths[:-1], axis=1)
+    is_dup = paddle.logical_and(adj_hash_eq, adj_row_eq)
+    is_first = paddle.concat(
+        [paddle.ones([1], dtype="bool"), paddle.logical_not(is_dup)]
+    )
+
+    cum_first = paddle.cumsum(is_first.astype("int64")) - 1
+    inverse = paddle.empty([n], dtype="int64")
+    inverse = paddle.index_put(inverse, (order,), cum_first)
+
+    unique = sorted_paths[is_first]
+    n_unique = unique.shape[0]
+    if n_unique < size:
+        pad_rows = paddle.full((size - n_unique, t), pad, dtype=unique.dtype)
+        unique = paddle.concat([unique, pad_rows], axis=0)
+    return unique, inverse
+
+
+def _merge_scores(inverse, scores, num_uniques):
+    """Log-space scatter-add of `scores` into `num_uniques` buckets."""
+    scores_max = paddle.max(scores)
+    scores_exp = paddle.exp(scores - scores_max)
+    out = paddle.zeros([num_uniques], dtype=scores.dtype)
+    out = paddle.scatter_add(out, 0, inverse, scores_exp)
+    return paddle.log(out) + scores_max
+
+
 def ctc_decode(
     inputs,
     sequence_lengths,
@@ -890,9 +1147,12 @@ def ctc_decode(
         scores = -paddle.sum(scores, axis=1).unsqueeze(1)
         indices = indices.unsqueeze(0)
         return indices, scores
-    raise NotImplementedError(
-        "CTC decode strategy 'beam_search' is not supported with the "
-        "paddle backend."
+    return _ctc_beam_search_decode(
+        inputs,
+        sequence_lengths,
+        beam_width=beam_width,
+        top_paths=top_paths,
+        mask_index=mask_index,
     )
 
 
