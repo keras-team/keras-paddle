@@ -285,9 +285,7 @@ keras/src/layers/core/wrapper_test.py::WrapperTest::test_wrapper_basics
 # Paddle's CPU build does not register a bfloat16 kernel for `add`,
 # `divide` and `clip`.
 ########################################################################
-keras/src/losses/losses_test.py::BinaryCrossentropyTest::test_dtype_arg
 keras/src/losses/losses_test.py::BinaryFocalCrossentropyTest::test_dtype_arg
-keras/src/losses/losses_test.py::CategoricalCrossentropyTest::test_dtype_arg
 keras/src/losses/losses_test.py::CategoricalFocalCrossentropyTest::test_dtype_arg
 keras/src/losses/losses_test.py::CircleTest::test_dtype_arg
 keras/src/losses/losses_test.py::CosineSimilarityTest::test_dtype_arg
@@ -296,7 +294,6 @@ keras/src/losses/losses_test.py::KLDivergenceTest::test_dtype_arg
 keras/src/losses/losses_test.py::LogCoshTest::test_dtype_arg
 keras/src/losses/losses_test.py::MeanAbsolutePercentageErrorTest::test_dtype_arg
 keras/src/losses/losses_test.py::PoissonTest::test_dtype_arg
-keras/src/losses/losses_test.py::SparseCategoricalCrossentropyTest::test_dtype_arg
 keras/src/losses/losses_test.py::TverskyTest::test_dtype_arg
 
 ########################################################################

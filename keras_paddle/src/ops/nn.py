@@ -1036,13 +1036,21 @@ def binary_crossentropy(target, output, from_logits=False):
         )
     if target.dtype != output.dtype:
         target = paddle.cast(target, output.dtype)
+    # Paddle's CPU build registers no float16/bfloat16 kernel for `clip`
+    # or the BCE losses, so compute in float32 and cast back.
+    orig_dtype = output.dtype
+    if needs_reduced_precision_upcast(output):
+        target = target.cast("float32")
+        output = output.cast("float32")
     if from_logits:
-        return F.binary_cross_entropy_with_logits(
+        result = F.binary_cross_entropy_with_logits(
             output, target, reduction="none"
         )
-    epsilon = backend.epsilon()
-    output = paddle.clip(output, min=epsilon, max=1.0 - epsilon)
-    return F.binary_cross_entropy(output, target, reduction="none")
+    else:
+        epsilon = backend.epsilon()
+        output = paddle.clip(output, min=epsilon, max=1.0 - epsilon)
+        result = F.binary_cross_entropy(output, target, reduction="none")
+    return result.cast(to_paddle_dtype(orig_dtype))
 
 
 def categorical_crossentropy(target, output, from_logits=False, axis=-1):
@@ -1067,12 +1075,17 @@ def categorical_crossentropy(target, output, from_logits=False, axis=-1):
     if from_logits:
         log_prob = log_softmax(output, axis=axis)
     else:
+        orig_dtype = output.dtype
+        if needs_reduced_precision_upcast(output):
+            target = target.cast("float32")
+            output = output.cast("float32")
         # Normalize so that the values form a proper probability
         # distribution, matching the other Keras backends.
         output = output / paddle.sum(output, axis=axis, keepdim=True)
         epsilon = backend.epsilon()
         output = paddle.clip(output, min=epsilon, max=1.0 - epsilon)
-        log_prob = paddle.log(output)
+        log_prob = paddle.log(output).cast(to_paddle_dtype(orig_dtype))
+        target = target.cast(log_prob.dtype)
     return -paddle.sum(target * log_prob, axis=axis)
 
 
@@ -1098,10 +1111,13 @@ def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
     if from_logits:
         log_prob = log_softmax(output, axis=axis)
     else:
+        orig_dtype = output.dtype
+        if needs_reduced_precision_upcast(output):
+            output = output.cast("float32")
         output = output / paddle.sum(output, axis=axis, keepdim=True)
         epsilon = backend.epsilon()
         output = paddle.clip(output, min=epsilon, max=1.0 - epsilon)
-        log_prob = paddle.log(output)
+        log_prob = paddle.log(output).cast(to_paddle_dtype(orig_dtype))
     target_one_hot = one_hot(
         target, output.shape[axis], axis=axis, dtype=log_prob.dtype
     )
