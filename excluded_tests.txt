@@ -8,72 +8,6 @@
 # Image ops that are not implemented by the paddle backend.
 ########################################################################
 
-# `map_coordinates`
-keras/src/ops/image_test.py::ImageOpsBehaviorTests::test_map_coordinates_invalid_coordinates_rank
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_0_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_0_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_0_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_0_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_0_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_1_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_1_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_1_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_1_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_float32_1_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_0_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_0_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_0_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_0_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_0_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_1_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_1_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_1_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_1_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_int32_1_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_0_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_0_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_0_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_0_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_0_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_1_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_1_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_1_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_1_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((3, 4, 5), (2, 3, 4))_uint8_1_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_0_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_0_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_0_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_0_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_0_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_1_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_1_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_1_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_1_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_float32_1_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_0_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_0_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_0_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_0_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_0_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_1_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_1_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_1_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_1_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_int32_1_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_0_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_0_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_0_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_0_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_0_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_1_constant
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_1_mirror
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_1_nearest
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_1_reflect
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_((5,), (7,))_uint8_1_wrap
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_map_coordinates_constant_padding
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_map_coordinates_bfloat16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_map_coordinates_float16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_map_coordinates_float32
 
 # `affine_transform`
 keras/src/layers/preprocessing/image_preprocessing/aug_mix_test.py::AugMixTest::test_layer
@@ -131,18 +65,6 @@ keras/src/layers/preprocessing/image_preprocessing/random_zoom_test.py::RandomZo
 keras/src/layers/preprocessing/image_preprocessing/random_zoom_test.py::RandomZoomTest::test_random_zoom_random_zoom_out_4_by_6
 keras/src/layers/preprocessing/image_preprocessing/random_zoom_test.py::RandomZoomTest::test_random_zoom_random_zoom_out_tuple_factor
 
-# `scale_and_translate`
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_cubic_false
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_cubic_true
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_lanczos3_false
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_lanczos3_true
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_lanczos5_false
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_lanczos5_true
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_linear_false
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_scale_and_translate_linear_true
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_scale_and_translate_bfloat16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_scale_and_translate_float16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_scale_and_translate_float32
 
 # `rgb_to_hsv`
 keras/src/layers/preprocessing/data_layer_test.py::DataLayerTest::test_grain_compatibility
@@ -151,22 +73,9 @@ keras/src/layers/preprocessing/data_layer_test.py::DataLayerTest::test_layer
 # float16 add kernel is missing on the Paddle CPU backend.
 keras/src/layers/preprocessing/image_preprocessing/random_color_jitter_test.py::RandomColorJitterTest::test_layer
 
-# `perspective_transform`
-keras/src/ops/image_test.py::ImageOpsBehaviorTests::test_perspective_transform_invalid_images_rank
-keras/src/ops/image_test.py::ImageOpsBehaviorTests::test_perspective_transform_invalid_points_rank
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_perspective_transform_bfloat16_no_crash
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_perspective_transform_bilinear
-keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_perspective_transform_nearest
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_perspective_transform_bfloat16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_perspective_transform_float16
-keras/src/ops/image_test.py::ImageOpsDtypeTest::test_perspective_transform_float32
+# RandomPerspective's test_layer runs its transformation arithmetic in
+# float16, whose `multiply` kernel is missing on the Paddle CPU backend.
 keras/src/layers/preprocessing/image_preprocessing/random_perspective_test.py::RandomPerspectiveTest::test_layer
-keras/src/layers/preprocessing/image_preprocessing/random_perspective_test.py::RandomPerspectiveTest::test_random_perspective_basic
-keras/src/layers/preprocessing/image_preprocessing/random_perspective_test.py::RandomPerspectiveTest::test_random_perspective_no_op
-
-# `compute_homography_matrix`
-keras/src/layers/preprocessing/image_preprocessing/random_perspective_test.py::RandomPerspectiveTest::test_random_perspective_bounding_boxes_with_large_scale
-keras/src/layers/preprocessing/image_preprocessing/random_perspective_test.py::RandomPerspectiveTest::test_random_perspective_bounding_boxes_with_small_scale
 
 # `gaussian_blur`
 # Even kernel sizes are not supported by the paddle backend.
@@ -223,13 +132,6 @@ keras/src/layers/preprocessing/image_preprocessing/resizing_test.py::ResizingTes
 keras/src/layers/reshaping/up_sampling2d_test.py::UpSampling2dTest::test_upsampling_2d_lanczos_interpolation_methods
 
 ########################################################################
-# Other ops that are not implemented by the paddle backend.
-# `associative_scan`.
-########################################################################
-keras/src/ops/core_test.py::CoreOpsBehaviorTests::test_associative_scan_invalid_arguments
-keras/src/ops/core_test.py::CoreOpsCorrectnessTest::test_associative_scan
-
-########################################################################
 # Missing float16 CPU kernels.
 # Paddle's CPU build does not register a float16 kernel for `add`,
 # `subtract` and `multiply`, which Keras applies directly to the
@@ -281,18 +183,14 @@ keras/src/layers/core/wrapper_test.py::WrapperTest::test_wrapper_basics
 # Paddle's CPU build does not register a bfloat16 kernel for `add`,
 # `divide` and `clip`.
 ########################################################################
-keras/src/losses/losses_test.py::BinaryCrossentropyTest::test_dtype_arg
 keras/src/losses/losses_test.py::BinaryFocalCrossentropyTest::test_dtype_arg
-keras/src/losses/losses_test.py::CategoricalCrossentropyTest::test_dtype_arg
 keras/src/losses/losses_test.py::CategoricalFocalCrossentropyTest::test_dtype_arg
 keras/src/losses/losses_test.py::CircleTest::test_dtype_arg
-keras/src/losses/losses_test.py::CosineSimilarityTest::test_dtype_arg
 keras/src/losses/losses_test.py::DiceTest::test_dtype_arg
 keras/src/losses/losses_test.py::KLDivergenceTest::test_dtype_arg
 keras/src/losses/losses_test.py::LogCoshTest::test_dtype_arg
 keras/src/losses/losses_test.py::MeanAbsolutePercentageErrorTest::test_dtype_arg
 keras/src/losses/losses_test.py::PoissonTest::test_dtype_arg
-keras/src/losses/losses_test.py::SparseCategoricalCrossentropyTest::test_dtype_arg
 keras/src/losses/losses_test.py::TverskyTest::test_dtype_arg
 
 ########################################################################

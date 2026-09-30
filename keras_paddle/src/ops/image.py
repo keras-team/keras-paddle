@@ -1,7 +1,12 @@
+import functools
+import itertools
+import operator
+
 import numpy as np
 import paddle
 import paddle.nn.functional as F
 
+from keras.src.backend.common.dtypes import result_type
 from keras.src.backend.common.variables import standardize_dtype
 from keras.src.backend.config import standardize_data_format
 from keras_paddle.src.ops.core import convert_to_tensor
@@ -26,6 +31,252 @@ UNSUPPORTED_INTERPOLATIONS = (
     "lanczos3",
     "lanczos5",
 )
+
+AFFINE_TRANSFORM_INTERPOLATIONS = {  # map to order
+    "nearest": 0,
+    "bilinear": 1,
+}
+MAP_COORDINATES_FILL_MODES = {
+    "constant",
+    "nearest",
+    "wrap",
+    "mirror",
+    "reflect",
+}
+_INDEX_FIXERS = {
+    # Out-of-bound indices are handled after the fixer for `constant`
+    # and `nearest`, so both just clip here.
+    "constant": lambda index, size: paddle.clip(index, 0, size - 1),
+    "nearest": lambda index, size: paddle.clip(index, 0, size - 1),
+    "wrap": lambda index, size: index % size,
+    # `mirror` folds at `size - 1` with half-wavelength `size - 1`.
+    "mirror": lambda index, size: paddle.abs(
+        (index + size - 1) % (2 * size - 2) - (size - 1)
+    ),
+    # `reflect` folds at the edge itself with half-wavelength `size`.
+    "reflect": lambda index, size: paddle.abs(
+        (index + size - 1) % (2 * size) - (size - 1)
+    ),
+}
+
+
+def _is_integer(dtype):
+    return "int" in standardize_dtype(dtype) or dtype == "bool"
+
+
+def _nearest_indices_and_weights(coordinate):
+    coordinate = paddle.round(coordinate)
+    index = coordinate.cast("int64")
+    return [(index, 1)]
+
+
+def _linear_indices_and_weights(coordinate):
+    lower = paddle.floor(coordinate)
+    upper_weight = coordinate - lower
+    lower_weight = 1 - upper_weight
+    index = lower.cast("int64")
+    return [(index, lower_weight), (index + 1, upper_weight)]
+
+
+def map_coordinates(
+    inputs, coordinates, order, fill_mode="constant", fill_value=0.0
+):
+    input_arr = convert_to_tensor(inputs)
+    coordinate_arrs = [convert_to_tensor(c) for c in coordinates]
+
+    if len(coordinate_arrs) != len(input_arr.shape):
+        raise ValueError(
+            "First dim of `coordinates` must be the same as the rank of "
+            "`inputs`. "
+            f"Received inputs with shape: {input_arr.shape} and coordinate "
+            f"leading dim of {len(coordinate_arrs)}"
+        )
+    if len(coordinate_arrs[0].shape) < 1:
+        shape = (len(coordinate_arrs),) + coordinate_arrs[0].shape
+        raise ValueError(
+            "Invalid coordinates rank: expected at least rank 2."
+            f" Received input with shape: {shape}"
+        )
+
+    input_dtype = standardize_dtype(input_arr.dtype)
+    # Paddle's `where` cannot mix float and integer operands, and has no
+    # uint8 kernel for it, so any input that could reach `where` with a
+    # float `fill_value` has to be computed in float32.
+    if not _is_float_dtype(input_dtype) or input_dtype in (
+        "float16",
+        "bfloat16",
+        "float8_e4m3fn",
+        "float8_e5m2",
+    ):
+        input_arr = input_arr.cast("float32")
+        coordinate_arrs = [c.cast("float32") for c in coordinate_arrs]
+    fill_value = paddle.to_tensor(fill_value, dtype=input_arr.dtype)
+
+    index_fixer = _INDEX_FIXERS.get(fill_mode)
+    if index_fixer is None:
+        raise ValueError(
+            "Invalid value for argument `fill_mode`. Expected one of "
+            f"{set(_INDEX_FIXERS.keys())}. Received: fill_mode={fill_mode}"
+        )
+
+    if order == 0:
+        interp_fun = _nearest_indices_and_weights
+    elif order == 1:
+        interp_fun = _linear_indices_and_weights
+    else:
+        raise NotImplementedError("map_coordinates currently requires order<=1")
+
+    if fill_mode == "constant":
+
+        def is_valid(index, size):
+            return (0 <= index) & (index < size)
+
+    else:
+
+        def is_valid(index, size):
+            return True
+
+    valid_1d_interpolations = []
+    for coordinate, size in zip(coordinate_arrs, input_arr.shape):
+        interp_nodes = interp_fun(coordinate)
+        valid_interp = []
+        for index, weight in interp_nodes:
+            fixed_index = index_fixer(index, size)
+            valid = is_valid(index, size)
+            valid_interp.append((fixed_index, valid, weight))
+        valid_1d_interpolations.append(valid_interp)
+
+    outputs = []
+    for items in itertools.product(*valid_1d_interpolations):
+        indices, validities, weights = zip(*items)
+        if all(valid is True for valid in validities):
+            contribution = input_arr[indices]
+        else:
+            all_valid = functools.reduce(operator.and_, validities)
+            contribution = paddle.where(
+                all_valid, input_arr[indices], fill_value
+            )
+        outputs.append(functools.reduce(operator.mul, weights) * contribution)
+    result = functools.reduce(operator.add, outputs)
+    if _is_integer(input_dtype):
+        result = paddle.round(result)
+    return result.cast(to_paddle_dtype(input_dtype))
+
+
+def _is_integer(dtype):
+    return "int" in standardize_dtype(dtype) or dtype == "bool"
+
+
+SCALE_AND_TRANSLATE_METHODS = {
+    "linear",
+    "bilinear",
+    "trilinear",
+    "cubic",
+    "bicubic",
+    "tricubic",
+    "lanczos3",
+    "lanczos5",
+}
+
+
+def _fill_triangle_kernel(x):
+    return paddle.maximum(paddle.zeros_like(x), 1 - paddle.abs(x))
+
+
+def _fill_keys_cubic_kernel(x):
+    out = ((1.5 * x - 2.5) * x) * x + 1.0
+    out = paddle.where(x >= 1.0, ((-0.5 * x + 2.5) * x - 4.0) * x + 2.0, out)
+    return paddle.where(x >= 2.0, 0.0, out)
+
+
+def _fill_lanczos_kernel(radius, x):
+    y = radius * paddle.sin(paddle.pi * x) * paddle.sin(paddle.pi * x / radius)
+    out = paddle.where(
+        x > 1e-3,
+        paddle.divide(
+            y,
+            paddle.where(x != 0, paddle.pi**2 * x**2, paddle.ones_like(x)),
+        ),
+        paddle.ones_like(x),
+    )
+    return paddle.where(x > radius, 0.0, out)
+
+
+def _compute_weight_mat(
+    input_size, output_size, scale, translation, kernel, antialias
+):
+    inv_scale = 1.0 / scale
+    kernel_scale = (
+        paddle.maximum(inv_scale, paddle.ones_like(inv_scale))
+        if antialias
+        else paddle.ones_like(inv_scale)
+    )
+    sample_f = (
+        (paddle.arange(output_size, dtype=scale.dtype) + 0.5) * inv_scale
+        - translation * inv_scale
+        - 0.5
+    )
+    x = (
+        paddle.abs(
+            sample_f.unsqueeze(0)
+            - paddle.arange(input_size, dtype=sample_f.dtype).unsqueeze(1)
+        )
+        / kernel_scale
+    )
+    weights = kernel(x)
+    total_weight_sum = paddle.sum(weights, axis=0, keepdim=True)
+    weights = paddle.where(
+        paddle.abs(total_weight_sum) > 1000.0 * float(np.finfo(np.float32).eps),
+        paddle.divide(
+            weights,
+            paddle.where(
+                total_weight_sum != 0,
+                total_weight_sum,
+                paddle.ones_like(total_weight_sum),
+            ),
+        ),
+        paddle.zeros_like(weights),
+    )
+    in_bounds = paddle.logical_and(
+        sample_f >= -0.5, sample_f <= input_size - 0.5
+    ).unsqueeze(0)
+    return paddle.where(in_bounds, weights, paddle.zeros_like(weights))
+
+
+def _scale_and_translate(
+    x, output_shape, spatial_dims, scale, translation, kernel, antialias
+):
+    input_shape = x.shape
+
+    if len(spatial_dims) == 0:
+        return x
+
+    input_dtype = standardize_dtype(x.dtype)
+    # Paddle has no CPU kernels for `divide`/`sin`/... on float16 and
+    # bfloat16, so the resampling math runs in float32 and the result is
+    # cast back at the end.
+    use_rounding = _is_integer(input_dtype)
+    if use_rounding or input_dtype in ("float16", "bfloat16"):
+        output = x.cast("float32")
+        compute_scale = scale.cast("float32")
+        compute_translation = translation.cast("float32")
+    else:
+        output = x.clone()
+        compute_scale = scale
+        compute_translation = translation
+
+    for i, d in enumerate(spatial_dims):
+        d = d % x.ndim
+        m, n = input_shape[d], output_shape[d]
+        w = _compute_weight_mat(
+            m, n, compute_scale[i], compute_translation[i], kernel, antialias
+        ).cast(output.dtype)
+        output = paddle.tensordot(output, w, axes=[(d,), (0,)])
+        output = paddle.moveaxis(output, -1, d)
+
+    if use_rounding:
+        output = paddle.clip(paddle.round(output), x.min(), x.max())
+    return output.cast(x.dtype)
 
 
 def _dtype_limits(dtype):
@@ -243,14 +494,6 @@ def affine_transform(
     )
 
 
-def map_coordinates(
-    inputs, coordinates, order, fill_mode="constant", fill_value=0.0
-):
-    raise NotImplementedError(
-        "`map_coordinates` is not supported with paddle backend"
-    )
-
-
 def rgb_to_hsv(images, data_format=None):
     # Ref: dm_pix
     data_format = standardize_data_format(data_format)
@@ -360,15 +603,261 @@ def perspective_transform(
     fill_value=0,
     data_format=None,
 ):
-    raise NotImplementedError(
-        "`perspective_transform` is not supported with paddle backend"
+    data_format = standardize_data_format(data_format)
+
+    images = convert_to_tensor(images)
+    dtype = standardize_dtype(images.dtype)
+    # Paddle's CPU `arange`/`empty` and the linear-algebra ops have no
+    # float16/bfloat16 kernels, so the transform math runs in float32.
+    if dtype in ("float16", "bfloat16"):
+        compute_dtype = "float32"
+    else:
+        compute_dtype = dtype
+    images = images.cast(to_paddle_dtype(compute_dtype))
+    start_points = convert_to_tensor(start_points, dtype=compute_dtype)
+    end_points = convert_to_tensor(end_points, dtype=compute_dtype)
+
+    if interpolation not in AFFINE_TRANSFORM_INTERPOLATIONS:
+        raise ValueError(
+            "Invalid value for argument `interpolation`. Expected of one "
+            f"{set(AFFINE_TRANSFORM_INTERPOLATIONS)}. Received: "
+            f"interpolation={interpolation}"
+        )
+
+    if images.ndim not in (3, 4):
+        raise ValueError(
+            "Invalid images rank: expected rank 3 (single image) "
+            "or rank 4 (batch of images). Received input with shape: "
+            f"images.shape={images.shape}"
+        )
+
+    if start_points.ndim not in (2, 3) or start_points.shape[-2:] != (4, 2):
+        raise ValueError(
+            "Invalid start_points shape: expected (4,2) for a single image"
+            f" or (N,4,2) for a batch. Received shape: {start_points.shape}"
+        )
+    if end_points.ndim not in (2, 3) or end_points.shape[-2:] != (4, 2):
+        raise ValueError(
+            "Invalid end_points shape: expected (4,2) for a single image"
+            f" or (N,4,2) for a batch. Received shape: {end_points.shape}"
+        )
+    if start_points.shape != end_points.shape:
+        raise ValueError(
+            "start_points and end_points must have the same shape."
+            f" Received start_points.shape={start_points.shape}, "
+            f"end_points.shape={end_points.shape}"
+        )
+
+    need_squeeze = False
+    if images.ndim == 3:
+        images = images.unsqueeze(0)
+        need_squeeze = True
+
+    if start_points.ndim == 2:
+        start_points = start_points.unsqueeze(0)
+    if end_points.ndim == 2:
+        end_points = end_points.unsqueeze(0)
+
+    if data_format == "channels_first":
+        images = paddle.transpose(images, [0, 2, 3, 1])
+
+    batch_size, height, width, channels = images.shape
+
+    transforms = compute_homography_matrix(start_points, end_points)
+
+    if transforms.ndim == 1:
+        transforms = transforms.unsqueeze(0)
+    if transforms.shape[0] == 1 and batch_size > 1:
+        transforms = transforms.tile([batch_size, 1])
+
+    grid_x, grid_y = paddle.meshgrid(
+        paddle.arange(width, dtype=to_paddle_dtype(compute_dtype)),
+        paddle.arange(height, dtype=to_paddle_dtype(compute_dtype)),
+        indexing="xy",
     )
+
+    output = paddle.empty(
+        [batch_size, height, width, channels],
+        dtype=to_paddle_dtype(dtype),
+    )
+
+    for i in range(batch_size):
+        a0, a1, a2, a3, a4, a5, a6, a7 = transforms[i]
+        denom = a6 * grid_x + a7 * grid_y + 1.0
+        x_in = (a0 * grid_x + a1 * grid_y + a2) / denom
+        y_in = (a3 * grid_x + a4 * grid_y + a5) / denom
+
+        coords = paddle.stack([y_in.flatten(), x_in.flatten()], axis=0)
+        mapped_channels = []
+        for channel in range(channels):
+            channel_img = images[i, :, :, channel]
+            mapped_channel = map_coordinates(
+                channel_img,
+                coords,
+                order=AFFINE_TRANSFORM_INTERPOLATIONS[interpolation],
+                fill_mode="constant",
+                fill_value=fill_value,
+            )
+            mapped_channels.append(mapped_channel.reshape([height, width]))
+        output[i] = paddle.stack(mapped_channels, axis=-1)
+
+    if data_format == "channels_first":
+        output = paddle.transpose(output, [0, 3, 1, 2])
+    if need_squeeze:
+        output = output.squeeze(0)
+
+    return output.cast(to_paddle_dtype(dtype))
 
 
 def compute_homography_matrix(start_points, end_points):
-    raise NotImplementedError(
-        "`compute_homography_matrix` is not supported with paddle backend"
+    start_points = convert_to_tensor(start_points)
+    end_points = convert_to_tensor(end_points)
+    dtype = result_type(
+        start_points.dtype,
+        end_points.dtype,
+        paddle.float32,
     )
+    start_points = start_points.cast(to_paddle_dtype(dtype))
+    end_points = end_points.cast(to_paddle_dtype(dtype))
+
+    start_x1, start_y1 = start_points[:, 0, 0], start_points[:, 0, 1]
+    start_x2, start_y2 = start_points[:, 1, 0], start_points[:, 1, 1]
+    start_x3, start_y3 = start_points[:, 2, 0], start_points[:, 2, 1]
+    start_x4, start_y4 = start_points[:, 3, 0], start_points[:, 3, 1]
+
+    end_x1, end_y1 = end_points[:, 0, 0], end_points[:, 0, 1]
+    end_x2, end_y2 = end_points[:, 1, 0], end_points[:, 1, 1]
+    end_x3, end_y3 = end_points[:, 2, 0], end_points[:, 2, 1]
+    end_x4, end_y4 = end_points[:, 3, 0], end_points[:, 3, 1]
+
+    coefficient_matrix = paddle.stack(
+        [
+            paddle.stack(
+                [
+                    end_x1,
+                    end_y1,
+                    paddle.ones_like(end_x1),
+                    paddle.zeros_like(end_x1),
+                    paddle.zeros_like(end_x1),
+                    paddle.zeros_like(end_x1),
+                    -start_x1 * end_x1,
+                    -start_x1 * end_y1,
+                ],
+                axis=-1,
+            ),
+            paddle.stack(
+                [
+                    paddle.zeros_like(end_x1),
+                    paddle.zeros_like(end_x1),
+                    paddle.zeros_like(end_x1),
+                    end_x1,
+                    end_y1,
+                    paddle.ones_like(end_x1),
+                    -start_y1 * end_x1,
+                    -start_y1 * end_y1,
+                ],
+                axis=-1,
+            ),
+            paddle.stack(
+                [
+                    end_x2,
+                    end_y2,
+                    paddle.ones_like(end_x2),
+                    paddle.zeros_like(end_x2),
+                    paddle.zeros_like(end_x2),
+                    paddle.zeros_like(end_x2),
+                    -start_x2 * end_x2,
+                    -start_x2 * end_y2,
+                ],
+                axis=-1,
+            ),
+            paddle.stack(
+                [
+                    paddle.zeros_like(end_x2),
+                    paddle.zeros_like(end_x2),
+                    paddle.zeros_like(end_x2),
+                    end_x2,
+                    end_y2,
+                    paddle.ones_like(end_x2),
+                    -start_y2 * end_x2,
+                    -start_y2 * end_y2,
+                ],
+                axis=-1,
+            ),
+            paddle.stack(
+                [
+                    end_x3,
+                    end_y3,
+                    paddle.ones_like(end_x3),
+                    paddle.zeros_like(end_x3),
+                    paddle.zeros_like(end_x3),
+                    paddle.zeros_like(end_x3),
+                    -start_x3 * end_x3,
+                    -start_x3 * end_y3,
+                ],
+                axis=-1,
+            ),
+            paddle.stack(
+                [
+                    paddle.zeros_like(end_x3),
+                    paddle.zeros_like(end_x3),
+                    paddle.zeros_like(end_x3),
+                    end_x3,
+                    end_y3,
+                    paddle.ones_like(end_x3),
+                    -start_y3 * end_x3,
+                    -start_y3 * end_y3,
+                ],
+                axis=-1,
+            ),
+            paddle.stack(
+                [
+                    end_x4,
+                    end_y4,
+                    paddle.ones_like(end_x4),
+                    paddle.zeros_like(end_x4),
+                    paddle.zeros_like(end_x4),
+                    paddle.zeros_like(end_x4),
+                    -start_x4 * end_x4,
+                    -start_x4 * end_y4,
+                ],
+                axis=-1,
+            ),
+            paddle.stack(
+                [
+                    paddle.zeros_like(end_x4),
+                    paddle.zeros_like(end_x4),
+                    paddle.zeros_like(end_x4),
+                    end_x4,
+                    end_y4,
+                    paddle.ones_like(end_x4),
+                    -start_y4 * end_x4,
+                    -start_y4 * end_y4,
+                ],
+                axis=-1,
+            ),
+        ],
+        axis=1,
+    )
+
+    target_vector = paddle.stack(
+        [
+            start_x1,
+            start_y1,
+            start_x2,
+            start_y2,
+            start_x3,
+            start_y3,
+            start_x4,
+            start_y4,
+        ],
+        axis=-1,
+    ).unsqueeze(-1)
+
+    homography_matrix = paddle.linalg.solve(coefficient_matrix, target_vector)
+    homography_matrix = homography_matrix.reshape([-1, 8])
+    homography_matrix = homography_matrix.cast(to_paddle_dtype(dtype))
+    return homography_matrix
 
 
 def gaussian_blur(
@@ -470,8 +959,36 @@ def scale_and_translate(
     method,
     antialias=True,
 ):
-    raise NotImplementedError(
-        "`scale_and_translate` is not supported with paddle backend"
+    if method not in SCALE_AND_TRANSLATE_METHODS:
+        raise ValueError(
+            "Invalid value for argument `method`. Expected of one "
+            f"{SCALE_AND_TRANSLATE_METHODS}. Received: method={method}"
+        )
+    if method in ("linear", "bilinear", "trilinear", "triangle"):
+        method = "linear"
+    elif method in ("cubic", "bicubic", "tricubic"):
+        method = "cubic"
+
+    images = convert_to_tensor(images)
+    scale = convert_to_tensor(scale)
+    translation = convert_to_tensor(translation)
+    kernel = {
+        "linear": _fill_triangle_kernel,
+        "cubic": _fill_keys_cubic_kernel,
+        "lanczos3": lambda x: _fill_lanczos_kernel(3.0, x),
+        "lanczos5": lambda x: _fill_lanczos_kernel(5.0, x),
+    }[method]
+    dtype = result_type(scale.dtype, translation.dtype)
+    scale = scale.cast(to_paddle_dtype(dtype))
+    translation = translation.cast(to_paddle_dtype(dtype))
+    return _scale_and_translate(
+        images,
+        output_shape,
+        spatial_dims,
+        scale,
+        translation,
+        kernel,
+        antialias,
     )
 
 
