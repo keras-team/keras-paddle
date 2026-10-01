@@ -36,28 +36,39 @@ AFFINE_TRANSFORM_INTERPOLATIONS = {  # map to order
     "nearest": 0,
     "bilinear": 1,
 }
-MAP_COORDINATES_FILL_MODES = {
+AFFINE_TRANSFORM_FILL_MODES = {
+    "constant",
+    "nearest",
+    "wrap",
+    "mirror",
+    "reflect",
+}MAP_COORDINATES_FILL_MODES = {
     "constant",
     "nearest",
     "wrap",
     "mirror",
     "reflect",
 }
+
+
+def _mirror_index_fixer(index, size):
+    s = size - 1  # Half-wavelength of triangular wave
+    return paddle.abs((index + s) % (2 * s) - s)
+
+
+def _reflect_index_fixer(index, size):
+    return paddle.floor_divide(
+        _mirror_index_fixer(2 * index + 1, 2 * size + 1) - 1, 2
+    )
+
 _INDEX_FIXERS = {
     # Out-of-bound indices are handled after the fixer for `constant`
     # and `nearest`, so both just clip here.
     "constant": lambda index, size: paddle.clip(index, 0, size - 1),
     "nearest": lambda index, size: paddle.clip(index, 0, size - 1),
     "wrap": lambda index, size: index % size,
-    # `mirror` folds at `size - 1` with half-wavelength `size - 1`.
-    "mirror": lambda index, size: paddle.abs(
-        (index + size - 1) % (2 * size - 2) - (size - 1)
-    ),
-    # `reflect` folds at the edge itself with half-wavelength `size`.
-    "reflect": lambda index, size: paddle.abs(
-        (index + size - 1) % (2 * size) - (size - 1)
-    ),
-}
+    "mirror": _mirror_index_fixer,
+    "reflect": _reflect_index_fixer,}
 
 
 def _is_integer(dtype):
@@ -489,10 +500,112 @@ def affine_transform(
     fill_value=0,
     data_format=None,
 ):
-    raise NotImplementedError(
-        "`affine_transform` is not supported with paddle backend"
+    data_format = standardize_data_format(data_format)
+    if interpolation not in AFFINE_TRANSFORM_INTERPOLATIONS:
+        raise ValueError(
+            "Invalid value for argument `interpolation`. Expected of one "
+            f"{set(AFFINE_TRANSFORM_INTERPOLATIONS)}. Received: "
+            f"interpolation={interpolation}"
+        )
+    if fill_mode not in AFFINE_TRANSFORM_FILL_MODES:
+        raise ValueError(
+            "Invalid value for argument `fill_mode`. Expected of one "
+            f"{AFFINE_TRANSFORM_FILL_MODES}. Received: fill_mode={fill_mode}"
+        )
+
+    images = convert_to_tensor(images)
+    transform = convert_to_tensor(transform)
+
+    if images.ndim not in (3, 4):
+        raise ValueError(
+            "Invalid images rank: expected rank 3 (single image) "
+            "or rank 4 (batch of images). Received input with shape: "
+            f"images.shape={images.shape}"
+        )
+    if transform.ndim not in (1, 2):
+        raise ValueError(
+            "Invalid transform rank: expected rank 1 (single transform) "
+            "or rank 2 (batch of transforms). Received input with shape: "
+            f"transform.shape={transform.shape}"
+        )
+
+    # The index grids and `einsum` have no float16/bfloat16 CPU kernels,
+    # so the transform math runs in float32.
+    input_dtype = standardize_dtype(images.dtype)
+    compute_dtype = result_type(input_dtype, "float32")
+    images = images.cast(to_paddle_dtype(compute_dtype))
+    transform = transform.cast(to_paddle_dtype(compute_dtype))
+
+    # unbatched case
+    need_squeeze = False
+    if images.ndim == 3:
+        images = images.unsqueeze(0)
+        need_squeeze = True
+    if transform.ndim == 1:
+        transform = transform.unsqueeze(0)
+
+    if data_format == "channels_first":
+        images = paddle.transpose(images, [0, 2, 3, 1])
+
+    batch_size = images.shape[0]
+
+    # get indices
+    meshgrid = paddle.meshgrid(
+        *[
+            paddle.arange(size, dtype=to_paddle_dtype(compute_dtype))
+            for size in images.shape[1:]
+        ],
+        indexing="ij",
+    )
+    indices = paddle.concat(
+        [paddle.unsqueeze(x, axis=-1) for x in meshgrid], axis=-1
+    )
+    indices = indices.tile([batch_size, 1, 1, 1, 1])
+
+    # swap the values
+    a0 = transform[:, 0].clone()
+    a2 = transform[:, 2].clone()
+    b1 = transform[:, 4].clone()
+    b2 = transform[:, 5].clone()
+    transform = transform.clone()
+    transform[:, 0] = b1
+    transform[:, 2] = b2
+    transform[:, 4] = a0
+    transform[:, 5] = a2
+
+    # deal with transform
+    transform = paddle.nn.functional.pad(
+        transform, pad=[0, 0, 0, 1], mode="constant", value=1
+    )
+    transform = paddle.reshape(transform, [batch_size, 3, 3])
+    offset = transform[:, 0:2, 2].clone()
+    offset = paddle.nn.functional.pad(offset, pad=[0, 0, 0, 1])
+    transform[:, 0:2, 2] = 0
+
+    # transform the indices
+    coordinates = paddle.einsum("Bhwij, Bjk -> Bhwik", indices, transform)
+    coordinates = paddle.moveaxis(coordinates, source=-1, destination=1)
+    coordinates = coordinates + offset.reshape([*offset.shape, 1, 1, 1])
+
+    affined = paddle.stack(
+        [
+            map_coordinates(
+                images[i],
+                coordinates[i],
+                order=AFFINE_TRANSFORM_INTERPOLATIONS[interpolation],
+                fill_mode=fill_mode,
+                fill_value=fill_value,
+            )
+            for i in range(batch_size)
+        ],
+        axis=0,
     )
 
+    if data_format == "channels_first":
+        affined = paddle.transpose(affined, [0, 3, 1, 2])
+    if need_squeeze:
+        affined = affined.squeeze(0)
+    return affined.cast(to_paddle_dtype(input_dtype))
 
 def rgb_to_hsv(images, data_format=None):
     # Ref: dm_pix
