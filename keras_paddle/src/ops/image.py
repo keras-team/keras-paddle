@@ -1175,3 +1175,118 @@ def sobel_edges(images, data_format=None):
     if dtype != compute_dtype:
         edges = edges.cast(to_paddle_dtype(dtype))
     return edges
+
+
+def reconstruct_patches(
+    patches,
+    size,
+    output_size,
+    strides=None,
+    padding="valid",
+    data_format=None,
+):
+    """Reconstruct image(s) from non-overlapping patches.
+
+    Inverse of `extract_patches` for the non-overlapping case
+    (strides == size).
+    """
+    if not isinstance(size, int):
+        if not isinstance(size, (tuple, list)):
+            raise TypeError(
+                "Invalid `size` argument. Expected an int or a tuple. "
+                f"Received: size={size} of type {type(size).__name__}"
+            )
+        if len(size) not in (2, 3):
+            raise ValueError(
+                "Invalid `size` argument. Expected a tuple of length "
+                f"2 or 3. Received: size={size} with length {len(size)}"
+            )
+    if not isinstance(size, int) and len(size) == 3:
+        raise NotImplementedError(
+            "3D patch reconstruction is not yet supported."
+        )
+
+    # Validate strides == size (non-overlapping only)
+    if strides is None:
+        strides = size
+    if isinstance(strides, int):
+        strides = (strides,) * (2 if isinstance(size, int) else len(size))
+    if isinstance(size, int):
+        size_tuple = (size, size)
+    else:
+        size_tuple = tuple(size)
+    if tuple(strides) != size_tuple:
+        raise NotImplementedError(
+            "`reconstruct_patches` currently supports only "
+            "non-overlapping reconstruction (strides == size). "
+            f"Got strides={strides} and size={size}."
+        )
+
+    data_format = standardize_data_format(data_format)
+
+    # Handle channels_first by transposing to channels_last
+    if data_format == "channels_first":
+        if len(patches.shape) == 3:
+            patches = paddle.transpose(patches, [1, 2, 0])
+        elif len(patches.shape) == 4:
+            patches = paddle.transpose(patches, [0, 2, 3, 1])
+        else:
+            raise ValueError(
+                "`patches` has unexpected rank. Expected 3 or 4. "
+                f"Received shape: {patches.shape}"
+            )
+
+    pH, pW = size_tuple
+    H, W = output_size[0], output_size[1]
+
+    _unbatched = False
+    if len(patches.shape) == 3:
+        _unbatched = True
+        patches = paddle.unsqueeze(patches, axis=0)
+
+    shp = list(patches.shape)
+    B, gH, gW = shp[0], shp[1], shp[2]
+    static_flat = patches.shape[-1]
+    if static_flat is None:
+        C = shp[3] // (pH * pW)
+    else:
+        if static_flat % (pH * pW) != 0:
+            raise ValueError(
+                f"`patches` last dim ({static_flat}) is not divisible "
+                f"by prod(size) ({pH * pW})."
+            )
+        C = static_flat // (pH * pW)
+
+    x = paddle.reshape(patches, (B, gH, gW, pH, pW, C))
+    x = paddle.transpose(x, [0, 1, 3, 2, 4, 5])
+    x = paddle.reshape(x, (B, gH * pH, gW * pW, C))
+
+    if padding == "same":
+        pad_total_h = gH * pH - H
+        pad_total_w = gW * pW - W
+        begin_h = pad_total_h // 2
+        begin_w = pad_total_w // 2
+        x = paddle.slice(
+            x,
+            axes=[0, 1, 2, 3],
+            starts=[0, begin_h, begin_w, 0],
+            ends=[B, begin_h + H, begin_w + W, C],
+        )
+    else:
+        if gH * pH != H or gW * pW != W:
+            raise ValueError(
+                f"`padding='valid'` requires output_size to equal "
+                f"size * grid. Got output_size=({H},{W}), "
+                f"grid=({gH},{gW}), size=({pH},{pW})."
+            )
+
+    if _unbatched:
+        x = paddle.squeeze(x, axis=0)
+
+    if data_format == "channels_first":
+        if len(x.shape) == 3:
+            x = paddle.transpose(x, [2, 0, 1])
+        else:
+            x = paddle.transpose(x, [0, 3, 1, 2])
+
+    return x
