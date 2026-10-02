@@ -24,6 +24,7 @@ from keras.src.backend.config import floatx
 SUPPORTS_SPARSE_TENSORS = False
 SUPPORTS_RAGGED_TENSORS = False
 SUPPORTS_COMPLEX_DTYPES = True
+SUPPORTS_GRADIENT = False
 IS_THREAD_SAFE = True
 
 DEFAULT_DEVICE = "cpu"
@@ -233,6 +234,13 @@ def cast(x, dtype):
             return x
         return x.cast(dtype)
     return convert_to_tensor(x, dtype)
+
+
+def grad(f, argnums=0):
+    raise NotImplementedError(
+        "`grad` is not supported with the paddle backend "
+        "because `SUPPORTS_GRADIENT` is False."
+    )
 
 
 def compute_output_spec(fn, *args, **kwargs):
