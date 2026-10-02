@@ -24,6 +24,7 @@ from keras.src.backend.config import floatx
 SUPPORTS_SPARSE_TENSORS = False
 SUPPORTS_RAGGED_TENSORS = False
 SUPPORTS_COMPLEX_DTYPES = True
+SUPPORTS_GRADIENT = False
 IS_THREAD_SAFE = True
 
 DEFAULT_DEVICE = "cpu"
@@ -233,6 +234,37 @@ def cast(x, dtype):
             return x
         return x.cast(dtype)
     return convert_to_tensor(x, dtype)
+
+
+def _get_dtype_min_max(dtype):
+    if "bool" == dtype:
+        return 0, 1
+    if "int" in dtype:
+        info = ml_dtypes.iinfo(dtype)
+        return info.min, info.max
+    info = ml_dtypes.finfo(dtype)
+    return info.min, info.max
+
+
+def saturate_cast(x, dtype):
+    dtype = standardize_dtype(dtype)
+    x = convert_to_tensor(x)
+    in_dtype = standardize_dtype(x.dtype)
+    if in_dtype == dtype:
+        return x
+
+    in_min, in_max = _get_dtype_min_max(in_dtype)
+    out_min, out_max = _get_dtype_min_max(dtype)
+
+    min_limit = np.maximum(in_min, out_min).astype(in_dtype)
+    if min_limit < out_min:
+        min_limit = np.nextafter(min_limit, 0, dtype=in_dtype)
+    max_limit = np.minimum(in_max, out_max).astype(in_dtype)
+    if max_limit > out_max:
+        max_limit = np.nextafter(max_limit, 0, dtype=in_dtype)
+
+    x = paddle.clip(x, min_limit, max_limit)
+    return cast(x, dtype)
 
 
 def compute_output_spec(fn, *args, **kwargs):
