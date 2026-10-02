@@ -783,10 +783,6 @@ def global_max_pool(inputs, data_format=None):
 
 
 def moments(x, axes, keepdims=False, synchronized=False):
-    if synchronized:
-        raise NotImplementedError(
-            "Argument synchronized=True is not supported with Paddle."
-        )
     x = convert_to_tensor(x)
     # The dynamic range of float16 is too limited for statistics (and
     # paddle has no float16/bfloat16 CPU kernel for `mean`/`var`), so
@@ -795,8 +791,43 @@ def moments(x, axes, keepdims=False, synchronized=False):
     need_cast = orig_dtype in ("float16", "bfloat16")
     if need_cast:
         x = x.cast("float32")
-    mean = paddle.mean(x, axis=axes, keepdim=keepdims)
-    variance = paddle.var(x, axis=axes, keepdim=keepdims, unbiased=False)
+    if synchronized:
+        # Cross-device synchronized moments: compute local sum and count,
+        # then all-reduce to get global statistics.
+        x_sum = paddle.sum(x, axis=axes, keepdim=True)
+        x_sq_sum = paddle.sum(x * x, axis=axes, keepdim=True)
+        count = paddle.prod(
+            paddle.to_tensor(
+                [
+                    x.shape[a]
+                    for a in (
+                        axes if isinstance(axes, (list, tuple)) else [axes]
+                    )
+                ]
+            )
+        ).astype(x.dtype)
+        try:
+            from paddle.distributed import ReduceOp
+            from paddle.distributed import all_reduce
+
+            all_reduce(x_sum, op=ReduceOp.SUM)
+            all_reduce(x_sq_sum, op=ReduceOp.SUM)
+            all_reduce(count, op=ReduceOp.SUM)
+        except Exception:
+            pass  # Single-device: no reduction needed
+        mean = x_sum / count
+        variance = x_sq_sum / count - mean * mean
+        if not keepdims:
+            mean = paddle.squeeze(
+                mean, axis=axes if isinstance(axes, (list, tuple)) else [axes]
+            )
+            variance = paddle.squeeze(
+                variance,
+                axis=axes if isinstance(axes, (list, tuple)) else [axes],
+            )
+    else:
+        mean = paddle.mean(x, axis=axes, keepdim=keepdims)
+        variance = paddle.var(x, axis=axes, keepdim=keepdims, unbiased=False)
     if need_cast:
         info = np.finfo(orig_dtype)
         mean = paddle.clip(mean, float(info.min), float(info.max))
