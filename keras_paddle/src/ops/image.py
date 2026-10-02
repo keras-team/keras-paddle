@@ -1175,3 +1175,81 @@ def sobel_edges(images, data_format=None):
     if dtype != compute_dtype:
         edges = edges.cast(to_paddle_dtype(dtype))
     return edges
+
+
+def _extract_patches_2d(
+    images,
+    size,
+    strides=None,
+    dilation_rate=1,
+    padding="valid",
+    data_format=None,
+):
+    if isinstance(size, int):
+        patch_h = patch_w = size
+    elif len(size) == 2:
+        patch_h, patch_w = size[0], size[1]
+    else:
+        raise TypeError(
+            "Invalid `size` argument. Expected an "
+            f"int or a tuple of length 2. Received: size={size}"
+        )
+    data_format = standardize_data_format(data_format)
+    if data_format == "channels_last":
+        channels_in = images.shape[-1]
+    else:
+        channels_in = images.shape[-3]
+    if not strides:
+        strides = size
+    out_dim = patch_h * patch_w * channels_in
+    kernel = paddle.eye(out_dim, dtype=images.dtype)
+    kernel = paddle.reshape(kernel, (patch_h, patch_w, channels_in, out_dim))
+    _unbatched = False
+    if len(images.shape) == 3:
+        _unbatched = True
+        images = paddle.unsqueeze(images, axis=0)
+
+    from keras_paddle.src.ops.nn import conv
+
+    patches = conv(
+        inputs=images,
+        kernel=kernel,
+        strides=strides,
+        padding=padding,
+        data_format=data_format,
+        dilation_rate=dilation_rate,
+    )
+    if _unbatched:
+        patches = paddle.squeeze(patches, axis=0)
+    return patches
+
+
+def extract_patches(
+    images,
+    size,
+    strides=None,
+    dilation_rate=1,
+    padding="valid",
+    data_format=None,
+):
+    if not isinstance(size, int):
+        if not isinstance(size, (tuple, list)):
+            raise TypeError(
+                "Invalid `size` argument. Expected an int or a tuple. "
+                f"Received: size={size} of type {type(size).__name__}"
+            )
+        if len(size) not in (2, 3):
+            raise ValueError(
+                "Invalid `size` argument. Expected a tuple of length "
+                f"2 or 3. Received: size={size} with length {len(size)}"
+            )
+    if not isinstance(size, int) and len(size) == 3:
+        raise NotImplementedError("3D patch extraction is not yet supported.")
+    return _extract_patches_2d(
+        images,
+        size,
+        strides,
+        dilation_rate,
+        padding,
+        data_format=data_format,
+    )
