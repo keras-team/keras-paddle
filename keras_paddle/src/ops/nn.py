@@ -10,7 +10,9 @@ from keras.src.backend.common.backend_utils import canonicalize_axis
 from keras.src.backend.common.backend_utils import (
     compute_conv_transpose_output_crops_for_torch,
 )
+from keras.src.backend.common.dtypes import result_type
 from keras.src.backend.config import floatx
+from keras_paddle.src.ops.core import cast
 from keras_paddle.src.ops.core import convert_to_tensor
 from keras_paddle.src.ops.core import needs_reduced_precision_upcast
 from keras_paddle.src.ops.core import to_paddle_dtype
@@ -1492,3 +1494,47 @@ def space_to_depth(x, block_size, data_format="channels_last"):
     x = paddle.reshape(x, [n, c, new_h, block_size, new_w, block_size])
     x = paddle.transpose(x, [0, 1, 3, 5, 2, 4])
     return paddle.reshape(x, [n, c * block_size**2, new_h, new_w])
+
+
+def rms_normalization(x, scale=None, axis=-1, epsilon=None):
+    if epsilon is None:
+        from keras.src.backend.config import epsilon as _epsilon
+
+        epsilon = _epsilon()
+    original_dtype = backend.standardize_dtype(x.dtype)
+    compute_dtype = result_type(x.dtype, "float32")
+    x = convert_to_tensor(x, dtype=compute_dtype)
+    if scale is not None:
+        scale = convert_to_tensor(scale, x.dtype)
+    if len(x.shape) == 0:
+        x = paddle.unsqueeze(x, axis=0)
+    rrms = paddle.rsqrt(
+        paddle.mean(paddle.square(x), axis=axis, keepdim=True) + epsilon
+    )
+    outputs = x * rrms
+    if scale is not None:
+        outputs = outputs * scale
+    return cast(outputs, original_dtype)
+
+
+def normalize(x, axis=-1, order=2, epsilon=None):
+    if not isinstance(order, int) or not order >= 1:
+        raise ValueError(
+            f"Argument `order` must be an int >= 1. Received: order={order}"
+        )
+    x = convert_to_tensor(x)
+    if len(x.shape) == 0:
+        x = paddle.unsqueeze(x, axis=0)
+    if epsilon is None:
+        from keras.src.backend.config import epsilon as _epsilon
+
+        epsilon = _epsilon()
+    if order == 2:
+        square_sum = paddle.sum(paddle.square(x), axis=axis, keepdim=True)
+        inv_norm = paddle.rsqrt(
+            paddle.maximum(square_sum, paddle.to_tensor(epsilon * epsilon))
+        )
+        return x * inv_norm
+    norm = paddle.linalg.norm(x, p=order, axis=axis, keepdim=True)
+    denom = paddle.maximum(norm, paddle.to_tensor(epsilon))
+    return paddle.divide(x, denom)
