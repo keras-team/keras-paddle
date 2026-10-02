@@ -1492,3 +1492,26 @@ def space_to_depth(x, block_size, data_format="channels_last"):
     x = paddle.reshape(x, [n, c, new_h, block_size, new_w, block_size])
     x = paddle.transpose(x, [0, 1, 3, 5, 2, 4])
     return paddle.reshape(x, [n, c * block_size**2, new_h, new_w])
+
+
+def normalize(x, axis=-1, order=2, epsilon=None):
+    if not isinstance(order, int) or not order >= 1:
+        raise ValueError(
+            f"Argument `order` must be an int >= 1. Received: order={order}"
+        )
+    x = convert_to_tensor(x)
+    if len(x.shape) == 0:
+        x = paddle.unsqueeze(x, axis=0)
+    if epsilon is None:
+        from keras.src.backend.config import epsilon as _epsilon
+
+        epsilon = _epsilon()
+    if order == 2:
+        square_sum = paddle.sum(paddle.square(x), axis=axis, keepdim=True)
+        inv_norm = paddle.rsqrt(
+            paddle.maximum(square_sum, paddle.to_tensor(epsilon * epsilon))
+        )
+        return x * inv_norm
+    norm = paddle.linalg.norm(x, p=order, axis=axis, keepdim=True)
+    denom = paddle.maximum(norm, paddle.to_tensor(epsilon))
+    return paddle.divide(x, denom)
