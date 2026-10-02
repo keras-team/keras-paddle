@@ -140,7 +140,18 @@ def map_coordinates(
     elif order == 1:
         interp_fun = _linear_indices_and_weights
     else:
-        raise NotImplementedError("map_coordinates currently requires order<=1")
+        # Fall back to numpy for higher-order spline interpolation
+        input_np = convert_to_numpy(input_arr)
+        coordinates_np = coordinates.numpy().astype("float64")
+        result_np = np.map_coordinates(
+            input_np,
+            coordinates_np,
+            order=order,
+            mode=fill_mode,
+            cval=fill_value if fill_value is not None else 0.0,
+        )
+        result = paddle.to_tensor(result_np, dtype=input_arr.dtype)
+        return result
 
     if fill_mode == "constant":
 
