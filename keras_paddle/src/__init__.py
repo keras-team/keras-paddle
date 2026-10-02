@@ -6,9 +6,10 @@ from keras_paddle.src.ops.core import compute_output_spec
 from keras_paddle.src.ops.core import device_scope
 from keras_paddle.src.variable import Variable
 
-SUPPORTS_SPARSE_TENSORS = False
-SUPPORTS_RAGGED_TENSORS = False
-SUPPORTS_COMPLEX_DTYPES = True
 IS_THREAD_SAFE = True
+SUPPORTS_COMPLEX_DTYPES = True
+SUPPORTS_GRADIENT = True
+SUPPORTS_RAGGED_TENSORS = False
+SUPPORTS_SPARSE_TENSORS = False
 
 distribution_lib = None

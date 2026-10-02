@@ -277,6 +277,24 @@ keras/src/quantizers/gptq_test.py::TestModelQuantization::test_quantize_gptq_com
 keras/src/callbacks/orbax_checkpoint_test.py::OrbaxCheckpointTest::test_training_resumption_2
 
 ########################################################################
+# Missing `grad` implementation.
+########################################################################
+keras/src/ops/core_test.py::CoreOpsCorrectnessTest::test_custom_gradient_false
+keras/src/ops/core_test.py::CoreOpsCorrectnessTest::test_custom_gradient_true
+keras/src/ops/core_test.py::CoreOpsGradTest::test_grad_argnums
+keras/src/ops/core_test.py::CoreOpsGradTest::test_grad_invalid_argnums
+keras/src/ops/core_test.py::CoreOpsGradTest::test_grad_keyword_arguments_pass_through
+keras/src/ops/core_test.py::CoreOpsGradTest::test_grad_nested_structure
+keras/src/ops/core_test.py::CoreOpsGradTest::test_grad_non_scalar_output_is_summed
+keras/src/ops/core_test.py::CoreOpsGradTest::test_grad_single_argument
+keras/src/ops/core_test.py::CoreOpsGradTest::test_grad_stateless_call
+keras/src/ops/core_test.py::CoreOpsGradTest::test_grad_through_layer
+keras/src/ops/core_test.py::CoreOpsGradTest::test_grad_unused_argument_is_zeros
+keras/src/ops/core_test.py::CoreOpsGradTest::test_grad_variable_argument
+keras/src/ops/nn_test.py::NNOpsCorrectnessTest::test_normalize_l2_zero_vector_gradients
+keras/src/ops/numpy_test.py::NumpyTwoInputOpsCorrectnessTest::test_divide_no_nan_gradients
+
+########################################################################
 # Newly failing tests. Mostly related to dtype promotion.
 ########################################################################
 keras/src/backend/common/variables_test.py::VariableOpsDTypeTest::test_add_('bfloat16', 'complex64')
@@ -373,6 +391,10 @@ keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_quantize_twi
 keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_quantized_kernel_is_packed_at_floor
 keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_quantized_model_save_load
 keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_save_load_no_bias
+keras/src/ops/nn_test.py::NNOpsCorrectnessTest::test_binary_crossentropy_non_float_output0
+keras/src/ops/nn_test.py::NNOpsCorrectnessTest::test_binary_crossentropy_non_float_output1
+keras/src/ops/nn_test.py::NNOpsCorrectnessTest::test_binary_crossentropy_non_float_output2
+keras/src/ops/nn_test.py::NNOpsCorrectnessTest::test_binary_crossentropy_non_float_output3
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_absolute_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_absolute_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_add_('uint16', 'bool')
@@ -883,6 +905,9 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_zeros_like_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_zeros_like_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_zeros_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_zeros_uint32
+keras/src/ops/numpy_test.py::NumpyOneInputOpsCorrectnessTest::test_argsort
+keras/src/ops/numpy_test.py::NumpyOneInputOpsCorrectnessTest::test_unravel_index
+keras/src/ops/numpy_test.py::NumpyTwoInputOpsCorrectnessTest::test_percentile
 keras/src/saving/file_editor_test.py::SavingTest::test_basics
 keras/src/saving/file_editor_test.py::SavingTest::test_scalar_weight
 keras/src/trainers/trainer_test.py::TestTrainer::test_predict_generator_50_eager
