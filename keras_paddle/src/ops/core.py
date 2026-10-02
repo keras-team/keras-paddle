@@ -24,6 +24,7 @@ from keras.src.backend.config import floatx
 SUPPORTS_SPARSE_TENSORS = False
 SUPPORTS_RAGGED_TENSORS = False
 SUPPORTS_COMPLEX_DTYPES = True
+SUPPORTS_GRADIENT = False
 IS_THREAD_SAFE = True
 
 DEFAULT_DEVICE = "cpu"
@@ -233,6 +234,10 @@ def cast(x, dtype):
             return x
         return x.cast(dtype)
     return convert_to_tensor(x, dtype)
+
+
+def dtype(x):
+    return standardize_dtype(x.dtype)
 
 
 def compute_output_spec(fn, *args, **kwargs):
