@@ -906,11 +906,6 @@ def gaussian_blur(
     # Sizes can be tensors; resolve them to ints before indexing.
     kernel_height = int(kernel_size[0])
     kernel_width = int(kernel_size[1])
-    if kernel_height % 2 == 0 or kernel_width % 2 == 0:
-        raise NotImplementedError(
-            "gaussian_blur with an even kernel size is not supported by "
-            "the paddle backend."
-        )
 
     need_squeeze = False
     if images.ndim == 3:
@@ -930,13 +925,26 @@ def gaussian_blur(
     kernel = kernel.reshape([1, 1, kernel_height, kernel_width])
     kernel = kernel.tile([num_channels, 1, 1, 1]).astype(compute_dtype)
 
-    # Odd kernel: Paddle's SAME pads with (k - 1) // 2 on each side,
-    # which is the same as what the reference implementations use.
+    # Compute asymmetric padding for even kernel sizes.
+    # For odd k: pad both sides with (k - 1) // 2 (symmetric).
+    # For even k: pad top/left with (k - 1) // 2, bottom/right with k // 2.
+    pad_top = (kernel_height - 1) // 2
+    pad_bottom = kernel_height // 2
+    pad_left = (kernel_width - 1) // 2
+    pad_right = kernel_width // 2
+
+    if pad_top == pad_bottom and pad_left == pad_right:
+        # Symmetric padding: use int for efficiency
+        padding = pad_top
+    else:
+        # Asymmetric padding: use [top, bottom, left, right]
+        padding = [pad_top, pad_bottom, pad_left, pad_right]
+
     blurred_images = F.conv2d(
         images,
         kernel,
         stride=1,
-        padding=kernel_height // 2,
+        padding=padding,
         groups=num_channels,
     )
 
