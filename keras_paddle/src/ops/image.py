@@ -1175,3 +1175,135 @@ def sobel_edges(images, data_format=None):
     if dtype != compute_dtype:
         edges = edges.cast(to_paddle_dtype(dtype))
     return edges
+
+
+def pad_images(
+    images,
+    top_padding=None,
+    left_padding=None,
+    bottom_padding=None,
+    right_padding=None,
+    target_height=None,
+    target_width=None,
+    data_format=None,
+):
+    data_format = standardize_data_format(data_format)
+    images = convert_to_tensor(images)
+    images_shape = list(images.shape)
+
+    if len(images_shape) not in (3, 4):
+        raise ValueError(
+            "Invalid images rank: expected rank 3 (single image) "
+            "or rank 4 (batch of images). "
+            f"Received: images.shape={images_shape}"
+        )
+
+    is_batch = len(images_shape) == 4
+    if data_format == "channels_last":
+        height, width = images_shape[-3], images_shape[-2]
+    else:
+        height, width = images_shape[-2], images_shape[-1]
+
+    if top_padding is None:
+        top_padding = target_height - bottom_padding - height
+    if bottom_padding is None:
+        bottom_padding = target_height - top_padding - height
+    if left_padding is None:
+        left_padding = target_width - right_padding - width
+    if right_padding is None:
+        right_padding = target_width - left_padding - width
+
+    for name, val in [
+        ("top_padding", top_padding),
+        ("left_padding", left_padding),
+        ("bottom_padding", bottom_padding),
+        ("right_padding", right_padding),
+    ]:
+        if val is not None and val < 0:
+            raise ValueError(f"{name} must be >= 0. Received: {name}={val}")
+
+    pad_width = [
+        [top_padding, bottom_padding],
+        [left_padding, right_padding],
+    ]
+    if data_format == "channels_last":
+        pad_width = pad_width + [[0, 0]]
+    else:
+        pad_width = [[0, 0]] + pad_width
+    if is_batch:
+        pad_width = [[0, 0]] + pad_width
+
+    from keras_paddle.src.ops.numpy import pad
+
+    return pad(images, pad_width)
+
+
+def crop_images(
+    images,
+    top_cropping=None,
+    left_cropping=None,
+    bottom_cropping=None,
+    right_cropping=None,
+    target_height=None,
+    target_width=None,
+    data_format=None,
+):
+    data_format = standardize_data_format(data_format)
+    images = convert_to_tensor(images)
+    images_shape = list(images.shape)
+
+    if len(images_shape) not in (3, 4):
+        raise ValueError(
+            "Invalid images rank: expected rank 3 (single image) "
+            "or rank 4 (batch of images). "
+            f"Received: images.shape={images_shape}"
+        )
+
+    is_batch = len(images_shape) == 4
+    if data_format == "channels_last":
+        height, width = images_shape[-3], images_shape[-2]
+        channels = images_shape[-1]
+    else:
+        height, width = images_shape[-2], images_shape[-1]
+        channels = images_shape[-3]
+
+    if top_cropping is None:
+        top_cropping = height - target_height - bottom_cropping
+    if target_height is None:
+        target_height = height - bottom_cropping - top_cropping
+    if left_cropping is None:
+        left_cropping = width - target_width - right_cropping
+    if target_width is None:
+        target_width = width - right_cropping - left_cropping
+
+    for name, val in [
+        ("top_cropping", top_cropping),
+        ("target_height", target_height),
+        ("left_cropping", left_cropping),
+        ("target_width", target_width),
+    ]:
+        if val is not None and val < 0:
+            raise ValueError(f"{name} must be >= 0. Received: {name}={val}")
+
+    start_indices = [top_cropping, left_cropping]
+    end_indices = [
+        top_cropping + target_height,
+        left_cropping + target_width,
+    ]
+    axes = []
+    if is_batch:
+        axes.append(0)
+        start_indices.insert(0, 0)
+        end_indices.insert(0, images_shape[0])
+    if data_format == "channels_last":
+        axes.extend([1, 2] if is_batch else [0, 1])
+        start_indices.append(0)
+        end_indices.append(channels)
+    else:
+        axes.extend([1, 2] if is_batch else [0, 1])
+        start_indices.insert(1 if is_batch else 0, 0)
+        end_indices.insert(1 if is_batch else 0, channels)
+
+    return paddle.slice(
+        images, axes=axes, starts=start_indices, ends=end_indices
+    )
