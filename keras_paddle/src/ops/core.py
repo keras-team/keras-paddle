@@ -24,6 +24,7 @@ from keras.src.backend.config import floatx
 SUPPORTS_SPARSE_TENSORS = False
 SUPPORTS_RAGGED_TENSORS = False
 SUPPORTS_COMPLEX_DTYPES = True
+SUPPORTS_GRADIENT = True
 IS_THREAD_SAFE = True
 
 DEFAULT_DEVICE = "cpu"
@@ -233,6 +234,55 @@ def cast(x, dtype):
             return x
         return x.cast(dtype)
     return convert_to_tensor(x, dtype)
+
+
+def grad(f, argnums=0):
+    """Return a function that computes the gradient of `f`.
+
+    Uses `paddle.grad` for automatic differentiation.
+    """
+
+    def grad_fn(*args, **kwargs):
+        if isinstance(argnums, int):
+            argnums_list = [argnums]
+        else:
+            argnums_list = list(argnums)
+
+        args_list = list(args)
+        tensors_to_diff = []
+        for idx in argnums_list:
+            arg = args_list[idx]
+            if is_tensor(arg):
+                arg.stop_gradient = False
+                tensors_to_diff.append(arg)
+            else:
+                arg = convert_to_tensor(arg)
+                arg.stop_gradient = False
+                args_list[idx] = arg
+                tensors_to_diff.append(arg)
+
+        outputs = f(*args_list, **kwargs)
+        if isinstance(outputs, (tuple, list)):
+            outputs = outputs[0]
+        if not is_tensor(outputs):
+            outputs = convert_to_tensor(outputs)
+
+        summed = paddle.sum(outputs)
+        grads_tuple = paddle.grad(
+            outputs=summed,
+            inputs=tensors_to_diff,
+            create_graph=False,
+            retain_graph=False,
+            allow_unused=True,
+        )
+        if grads_tuple is None:
+            grads_tuple = [None] * len(tensors_to_diff)
+
+        if isinstance(argnums, int):
+            return grads_tuple[0]
+        return tuple(grads_tuple)
+
+    return grad_fn
 
 
 def compute_output_spec(fn, *args, **kwargs):

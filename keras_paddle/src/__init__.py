@@ -9,6 +9,7 @@ from keras_paddle.src.variable import Variable
 SUPPORTS_SPARSE_TENSORS = False
 SUPPORTS_RAGGED_TENSORS = False
 SUPPORTS_COMPLEX_DTYPES = True
+SUPPORTS_GRADIENT = True
 IS_THREAD_SAFE = True
 
 distribution_lib = None
