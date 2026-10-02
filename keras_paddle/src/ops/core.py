@@ -24,6 +24,7 @@ from keras.src.backend.config import floatx
 SUPPORTS_SPARSE_TENSORS = False
 SUPPORTS_RAGGED_TENSORS = False
 SUPPORTS_COMPLEX_DTYPES = True
+SUPPORTS_GRADIENT = False
 IS_THREAD_SAFE = True
 
 DEFAULT_DEVICE = "cpu"

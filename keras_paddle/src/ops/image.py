@@ -1175,3 +1175,105 @@ def sobel_edges(images, data_format=None):
     if dtype != compute_dtype:
         edges = edges.cast(to_paddle_dtype(dtype))
     return edges
+
+
+def reconstruct_patches_3d(
+    patches,
+    size,
+    output_size,
+    strides=None,
+    padding="valid",
+    data_format=None,
+):
+    if isinstance(size, int):
+        size = (size, size, size)
+    if len(size) != 3:
+        raise ValueError(
+            f"Invalid `size`. Expected length 3 for 3D. Got: size={size}"
+        )
+    if len(output_size) != 3:
+        raise ValueError(
+            "Invalid `output_size`. Expected length 3 (D, H, W). "
+            f"Got: output_size={output_size}"
+        )
+    if padding not in ("same", "valid"):
+        raise ValueError(
+            f"Invalid `padding`. Expected 'same' or 'valid'. Got: {padding}"
+        )
+    if strides is None:
+        strides = size
+    if isinstance(strides, int):
+        strides = (strides,) * 3
+    if tuple(strides) != tuple(size):
+        raise NotImplementedError(
+            "`reconstruct_patches_3d` currently supports only "
+            "non-overlapping reconstruction (strides == size)."
+        )
+    data_format = standardize_data_format(data_format)
+    if data_format == "channels_first":
+        if len(patches.shape) == 4:
+            patches = paddle.transpose(patches, [1, 2, 3, 0])
+        elif len(patches.shape) == 5:
+            patches = paddle.transpose(patches, [0, 2, 3, 4, 1])
+        else:
+            raise ValueError(
+                "`patches` has unexpected rank. Expected 4 or 5. "
+                f"Received shape: {patches.shape}"
+            )
+
+    pD, pH, pW = size
+    D, H, W = output_size
+
+    _unbatched = False
+    if len(patches.shape) == 4:
+        _unbatched = True
+        patches = paddle.unsqueeze(patches, axis=0)
+
+    shp = list(patches.shape)
+    B, gD, gH, gW = shp[0], shp[1], shp[2], shp[3]
+    static_flat = patches.shape[-1]
+    if static_flat is None:
+        C = shp[4] // (pD * pH * pW)
+    else:
+        if static_flat % (pD * pH * pW) != 0:
+            raise ValueError(
+                f"`patches` last dim ({static_flat}) is not divisible "
+                f"by prod(size) ({pD * pH * pW})."
+            )
+        C = static_flat // (pD * pH * pW)
+
+    x = paddle.reshape(patches, (B, gD, gH, gW, pD, pH, pW, C))
+    x = paddle.transpose(x, [0, 1, 4, 2, 5, 3, 6, 7])
+    x = paddle.reshape(x, (B, gD * pD, gH * pH, gW * pW, C))
+
+    if padding == "same":
+        pad_total_d = gD * pD - D
+        pad_total_h = gH * pH - H
+        pad_total_w = gW * pW - W
+        begin_d = pad_total_d // 2
+        begin_h = pad_total_h // 2
+        begin_w = pad_total_w // 2
+        x = paddle.slice(
+            x,
+            axes=[0, 1, 2, 3, 4],
+            starts=[0, begin_d, begin_h, begin_w, 0],
+            ends=[B, begin_d + D, begin_h + H, begin_w + W, C],
+        )
+    else:
+        if gD * pD != D or gH * pH != H or gW * pW != W:
+            raise ValueError(
+                f"`padding='valid'` requires output_size to equal "
+                f"size * grid. Got output_size=({D},{H},{W}), "
+                f"grid=({gD},{gH},{gW}), size=({pD},{pH},{pW})."
+            )
+
+    if _unbatched:
+        x = paddle.squeeze(x, axis=0)
+
+    if data_format == "channels_first":
+        if len(x.shape) == 4:
+            x = paddle.transpose(x, [3, 0, 1, 2])
+        else:
+            x = paddle.transpose(x, [0, 4, 1, 2, 3])
+
+    return x
