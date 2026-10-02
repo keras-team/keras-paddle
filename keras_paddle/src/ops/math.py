@@ -482,3 +482,22 @@ def gammainc(x1, x2):
     x1 = x1.cast(to_paddle_dtype(compute_dtype))
     x2 = x2.cast(to_paddle_dtype(compute_dtype))
     return paddle.gammainc(x1, x2).cast(to_paddle_dtype(result_dtype))
+
+
+def view_as_real(x):
+    x = convert_to_tensor(x)
+    real_part = paddle.real(x)
+    imag_part = paddle.imag(x)
+    return paddle.stack([real_part, imag_part], axis=-1)
+
+
+def view_as_complex(x):
+    x = convert_to_tensor(x)
+    if len(x.shape) < 1 or x.shape[-1] != 2:
+        raise ValueError(
+            "Last dimension of input must be size 2 (real and imaginary). "
+            f"Received shape: {x.shape}"
+        )
+    real_part = x[..., 0]
+    imag_part = x[..., 1]
+    return _get_complex_tensor_from_tuple((real_part, imag_part))
