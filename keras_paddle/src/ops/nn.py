@@ -1492,3 +1492,13 @@ def space_to_depth(x, block_size, data_format="channels_last"):
     x = paddle.reshape(x, [n, c, new_h, block_size, new_w, block_size])
     x = paddle.transpose(x, [0, 1, 3, 5, 2, 4])
     return paddle.reshape(x, [n, c * block_size**2, new_h, new_w])
+
+
+def polar(abs_, angle):
+    abs_ = convert_to_tensor(abs_)
+    angle = convert_to_tensor(angle)
+    real = abs_ * paddle.cos(angle)
+    imag = abs_ * paddle.sin(angle)
+    from keras_paddle.src.ops.math import _get_complex_tensor_from_tuple
+
+    return _get_complex_tensor_from_tuple((real, imag))
