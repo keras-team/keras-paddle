@@ -1046,9 +1046,11 @@ def pad(x, pad_width, mode="constant", constant_values=None):
         else:
             result = paddle.nn.functional.pad(x, pad_list, mode="replicate")
     else:
-        raise NotImplementedError(
-            f"`pad` with mode='{mode}' is not supported with paddle backend"
-        )
+        # Fall back to numpy for modes not natively supported by paddle
+        x_np = x.numpy()
+        pad_width_np = [(int(left), int(right)) for left, right in pad_width]
+        result_np = np.pad(x_np, pad_width_np, mode=mode)
+        result = paddle.to_tensor(result_np, dtype=x.dtype)
     return result.cast(orig_dtype)
 
 
