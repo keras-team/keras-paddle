@@ -361,18 +361,93 @@ keras/src/layers/core/dense_test.py::DenseTest::test_dense_quantize_ternary_matc
 keras/src/layers/core/dense_test.py::DenseTest::test_dense_quantize_ternary_no_bias
 keras/src/layers/core/dense_test.py::DenseTest::test_dense_quantize_ternary_packed_density
 keras/src/layers/core/dense_test.py::DenseTest::test_dense_quantize_ternary_save_load
+keras/src/layers/core/dense_test.py::DenseTest::test_dense_quantize_ternary_small_kernel_float16_float16
+keras/src/layers/core/dense_test.py::DenseTest::test_dense_quantize_ternary_small_kernel_float16_mixed_float16
 keras/src/layers/core/dense_test.py::DenseTest::test_quantize_float8
 keras/src/layers/core/dense_test.py::DenseTest::test_serialization_round_trip
 keras/src/layers/core/einsum_dense_test.py::EinsumDenseTest::test_quantize_float8
+keras/src/layers/core/reversible_embedding_test.py::ReversibleEmbeddingTest::test_model_quantize_unsupported_mode_skips_with_reason_false
+keras/src/layers/core/reversible_embedding_test.py::ReversibleEmbeddingTest::test_model_quantize_unsupported_mode_skips_with_reason_true
 keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_model_quantize_ternary
+keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_quantize_bfloat16_bfloat16
+keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_quantize_bfloat16_mixed_bfloat16
 keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_quantize_fixed_threshold_matches_float_forward
 keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_quantize_matches_float_forward
 keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_quantize_skips_dtype_policy_update_when_already_set
+keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_quantize_small_kernel_float16_float16
+keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_quantize_small_kernel_float16_mixed_float16
 keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_quantize_subclass_type_check_false
 keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_quantize_twice_raises
 keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_quantized_kernel_is_packed_at_floor
 keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_quantized_model_save_load
 keras/src/layers/core/ternary_dense_test.py::TernaryDenseTest::test_save_load_no_bias
+keras/src/losses/losses_test.py::SparseCategoricalFocalCrossentropyTest::test_class_preserves_labels_with_low_precision_dtype_int32_max
+keras/src/losses/losses_test.py::SparseCategoricalFocalCrossentropyTest::test_class_preserves_labels_with_low_precision_dtype_int64_max
+keras/src/losses/losses_test.py::SparseCategoricalFocalCrossentropyTest::test_dtype_arg
+keras/src/losses/losses_test.py::SparseCategoricalFocalCrossentropyTest::test_narrow_integer_labels_int8
+keras/src/losses/losses_test.py::SparseCategoricalFocalCrossentropyTest::test_narrow_integer_labels_uint8
+keras/src/ops/core_test.py::CoreOpsDtypeTest::test_convert_to_numpy_uint16
+keras/src/ops/core_test.py::CoreOpsDtypeTest::test_convert_to_numpy_uint32
+keras/src/ops/image_test.py::ImageOpsBehaviorTests::test_affine_transform_invalid_transform_shape
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_bicubic_false_crop
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_bicubic_false_none
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_bicubic_false_pad
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_bicubic_false_float64
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_bicubic_false_int16
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_bicubic_false_int8
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_bicubic_false_uint8
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos3_false_float64
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos3_false_int16
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos3_false_int8
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos3_false_uint8
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos3_true_float64
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos3_true_int16
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos3_true_int8
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos3_true_uint8
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos5_false_float64
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos5_false_int16
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos5_false_int8
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos5_false_uint8
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos5_true_float64
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos5_true_int16
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos5_true_int8
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_dtype_lanczos5_true_uint8
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_lanczos3_false_crop
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_lanczos3_false_none
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_lanczos3_false_pad
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_lanczos3_true_crop
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_lanczos3_true_none
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_lanczos3_true_pad
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_lanczos5_false_crop
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_lanczos5_false_none
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_lanczos5_false_pad
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_lanczos5_true_crop
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_lanczos5_true_none
+keras/src/ops/image_test.py::ImageOpsCorrectnessTest::test_resize_lanczos5_true_pad
+keras/src/ops/math_test.py::MathOpsCorrectnessTest::test_erfinv_operation_edge_cases
+keras/src/ops/nn_test.py::NNOpsCorrectnessTest::test_hard_sigmoid
+keras/src/ops/nn_test.py::NNOpsCorrectnessTest::test_leaky_relu
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_hard_sigmoid_bool
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_hard_sigmoid_int16
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_hard_sigmoid_int32
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_hard_sigmoid_int8
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_hard_sigmoid_uint16
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_hard_sigmoid_uint32
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_hard_sigmoid_uint8
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_hard_silu_bool
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_hard_silu_int16
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_hard_silu_int32
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_hard_silu_int8
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_hard_silu_uint16
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_hard_silu_uint32
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_hard_silu_uint8
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_leaky_relu_bool
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_leaky_relu_int16
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_leaky_relu_int32
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_leaky_relu_int8
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_leaky_relu_uint16
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_leaky_relu_uint32
+keras/src/ops/nn_test.py::NNOpsDtypeTest::test_leaky_relu_uint8
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_absolute_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_absolute_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_add_('uint16', 'bool')
@@ -491,14 +566,29 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_('uint32', 'uint16')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_('uint32', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_('uint32', 'uint8')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_('uint8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_backend_specific_('bool', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_backend_specific_('int16', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_backend_specific_('int32', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_backend_specific_('int8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_backend_specific_('uint16', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_backend_specific_('uint32', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_backend_specific_('uint32', 'int16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_backend_specific_('uint32', 'int32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_backend_specific_('uint32', 'int8')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_backend_specific_('uint32', 'uint16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_backend_specific_('uint32', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_backend_specific_('uint32', 'uint8')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_copysign_backend_specific_('uint8', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_corrcoef_uint32
-keras/src/ops/numpy_test.py::NumpyDtypeTest::test_cov_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_correlate_('uint16', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_correlate_('uint32', 'bool')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_correlate_('uint32', 'int16')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_correlate_('uint32', 'int32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_correlate_('uint32', 'int8')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_correlate_('uint8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_cov_backend_agnostic_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_cov_backend_specific_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_cov_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_cross_('uint16', 'bool')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_cross_('uint16', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_cross_('uint32', 'bool')
@@ -528,6 +618,10 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_dot_('uint32', 'int32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_dot_('uint32', 'int8')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_dot_('uint8', 'uint16')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_dot_('uint8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_dsplit_backend_agnostic_uint16
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_dsplit_backend_agnostic_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_dsplit_backend_specific_uint16
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_dsplit_backend_specific_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_dsplit_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_dsplit_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_dstack_('uint16', 'bool')
@@ -569,6 +663,19 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('uint32', 'uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('uint32', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('uint32', 'uint8')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_('uint8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_backend_specific_('bool', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_backend_specific_('int16', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_backend_specific_('int32', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_backend_specific_('int8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_backend_specific_('uint16', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_backend_specific_('uint32', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_backend_specific_('uint32', 'int16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_backend_specific_('uint32', 'int32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_backend_specific_('uint32', 'int8')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_backend_specific_('uint32', 'uint16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_backend_specific_('uint32', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_backend_specific_('uint32', 'uint8')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_float_power_backend_specific_('uint8', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_floor_divide_('uint16', 'bool')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_floor_divide_('uint16', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_floor_divide_('uint32', 'bool')
@@ -587,6 +694,19 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_('uint32', 'int32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_('uint32', 'int8')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_('uint8', 'uint16')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_('uint8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_backend_agnostic_('uint16', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_backend_agnostic_('uint16', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_backend_agnostic_('uint32', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_backend_agnostic_('uint8', 'uint16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_backend_agnostic_('uint8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_backend_specific_('uint16', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_backend_specific_('uint16', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_backend_specific_('uint32', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_backend_specific_('uint32', 'int16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_backend_specific_('uint32', 'int32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_backend_specific_('uint32', 'int8')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_backend_specific_('uint8', 'uint16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmax_backend_specific_('uint8', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_('uint16', 'bool')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_('uint16', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_('uint32', 'bool')
@@ -595,6 +715,19 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_('uint32', 'int32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_('uint32', 'int8')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_('uint8', 'uint16')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_('uint8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_backend_agnostic_('uint16', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_backend_agnostic_('uint16', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_backend_agnostic_('uint32', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_backend_agnostic_('uint8', 'uint16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_backend_agnostic_('uint8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_backend_specific_('uint16', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_backend_specific_('uint16', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_backend_specific_('uint32', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_backend_specific_('uint32', 'int16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_backend_specific_('uint32', 'int32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_backend_specific_('uint32', 'int8')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_backend_specific_('uint8', 'uint16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmin_backend_specific_('uint8', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_('uint16', 'bool')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_('uint16', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_('uint32', 'bool')
@@ -603,6 +736,19 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_('uint32', 'int32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_('uint32', 'int8')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_('uint8', 'uint16')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_('uint8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_backend_agnostic_('uint16', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_backend_agnostic_('uint16', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_backend_agnostic_('uint32', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_backend_agnostic_('uint8', 'uint16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_backend_agnostic_('uint8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_backend_specific_('uint16', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_backend_specific_('uint16', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_backend_specific_('uint32', 'bool')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_backend_specific_('uint32', 'int16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_backend_specific_('uint32', 'int32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_backend_specific_('uint32', 'int8')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_backend_specific_('uint8', 'uint16')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_fmod_backend_specific_('uint8', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_full_like_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_full_like_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_full_uint16
@@ -619,6 +765,10 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_heaviside_('uint32', 'int16')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_heaviside_('uint32', 'int32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_heaviside_('uint32', 'int8')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_heaviside_('uint8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_hsplit_backend_agnostic_uint16
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_hsplit_backend_agnostic_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_hsplit_backend_specific_uint16
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_hsplit_backend_specific_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_hsplit_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_hsplit_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_hstack_('uint16', 'bool')
@@ -715,14 +865,32 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nan_to_num_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nan_to_num_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nancumprod_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nancumprod_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nancumsum_backend_agnostic_uint16
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nancumsum_backend_agnostic_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nancumsum_backend_specific_uint16
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nancumsum_backend_specific_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nancumsum_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nancumsum_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nanmax_backend_agnostic_uint16
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nanmax_backend_agnostic_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nanmax_backend_specific_uint16
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nanmax_backend_specific_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nanmax_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nanmax_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nanmin_backend_agnostic_uint16
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nanmin_backend_agnostic_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nanmin_backend_specific_uint16
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nanmin_backend_specific_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nanmin_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nanmin_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nanprod_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nanprod_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nansum_backend_agnostic_uint16
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nansum_backend_agnostic_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nansum_backend_agnostic_uint8
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nansum_backend_specific_uint16
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nansum_backend_specific_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nansum_backend_specific_uint8
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nansum_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_nansum_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_ones_like_uint16
@@ -782,6 +950,7 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_stack_('uint32', 'int32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_stack_('uint32', 'int8')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_stack_('uint8', 'uint16')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_stack_('uint8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_std_complex_functional_output_dtype
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_subtract_('uint16', 'bool')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_subtract_('uint16', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_subtract_('uint32', 'bool')
@@ -859,6 +1028,10 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_view_('uint32', 'int32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_view_('uint32', 'int8')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_view_('uint8', 'uint16')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_view_('uint8', 'uint32')
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_vsplit_backend_agnostic_uint16
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_vsplit_backend_agnostic_uint32
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_vsplit_backend_specific_uint16
+keras/src/ops/numpy_test.py::NumpyDtypeTest::test_vsplit_backend_specific_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_vsplit_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_vsplit_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_vstack_('uint16', 'bool')
@@ -883,6 +1056,27 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_zeros_like_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_zeros_like_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_zeros_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_zeros_uint32
+keras/src/ops/numpy_test.py::NumpyOneInputOpsCorrectnessTest::test_size
+keras/src/ops/numpy_test.py::NumpyTwoInputOpsCorrectnessTest::test_copysign_backend_agnostic
+keras/src/quantizers/awq_test.py::AWQAccuracyTest::test_awq_accuracy_various_group_sizes_group_128
+keras/src/quantizers/awq_test.py::AWQAccuracyTest::test_awq_accuracy_various_group_sizes_group_16
+keras/src/quantizers/awq_test.py::AWQAccuracyTest::test_awq_accuracy_various_group_sizes_group_32
+keras/src/quantizers/awq_test.py::AWQAccuracyTest::test_awq_accuracy_various_group_sizes_group_64
+keras/src/quantizers/awq_test.py::AWQAccuracyTest::test_awq_accuracy_various_group_sizes_per_channel
+keras/src/quantizers/awq_test.py::AWQAccuracyTest::test_awq_calibration_hooks_fire_during_model_quantize
+keras/src/quantizers/awq_test.py::AWQAccuracyTest::test_awq_recalibrates_downstream_stages
+keras/src/quantizers/awq_test.py::AWQAccuracyTest::test_awq_save_load_round_trip
+keras/src/quantizers/awq_test.py::AWQAccuracyTest::test_awq_transformer_accuracy_group_16
+keras/src/quantizers/awq_test.py::AWQAccuracyTest::test_awq_transformer_accuracy_per_channel
+keras/src/quantizers/awq_test.py::AWQAlgorithmTest::test_clip_reduces_per_group_reconstruction_error
+keras/src/quantizers/awq_test.py::AWQAlgorithmTest::test_search_best_clip_shapes
+keras/src/quantizers/awq_test.py::AWQIntegrationTest::test_awq_save_load_round_trip_einsum_dense_block
+keras/src/quantizers/fake_quant_test.py::FakeQuantTest::test_fake_quant_with_min_max_vars_functional_model_per_channel
+keras/src/quantizers/fake_quant_test.py::FakeQuantTest::test_fake_quant_with_min_max_vars_narrow_7bits_multi_channel
+keras/src/quantizers/fake_quant_test.py::FakeQuantTest::test_fake_quant_with_min_max_vars_narrow_8bits_multi_channel
+keras/src/quantizers/fake_quant_test.py::FakeQuantTest::test_fake_quant_with_min_max_vars_wide_7bits_multi_channel
+keras/src/quantizers/fake_quant_test.py::FakeQuantTest::test_fake_quant_with_min_max_vars_wide_8bits_multi_channel
+keras/src/quantizers/quantized_weight_test.py::LayerViewTest::test_ternary_view
 keras/src/saving/file_editor_test.py::SavingTest::test_basics
 keras/src/saving/file_editor_test.py::SavingTest::test_scalar_weight
 keras/src/trainers/trainer_test.py::TestTrainer::test_predict_generator_50_eager
