@@ -129,6 +129,9 @@ keras/src/layers/reshaping/up_sampling2d_test.py::UpSampling2dTest::test_upsampl
 # `subtract` and `multiply`, which Keras applies directly to the
 # backend tensors through the Python operators.
 ########################################################################
+keras/src/layers/preprocessing/image_preprocessing/aug_mix_test.py::AugMixTest::test_layer
+keras/src/layers/preprocessing/image_preprocessing/rand_augment_test.py::RandAugmentTest::test_layer
+keras/src/layers/preprocessing/image_preprocessing/random_shear_test.py::RandomShearTest::test_layer
 keras/src/layers/regularization/activity_regularization_test.py::ActivityRegularizationTest::test_activity_regularization_basics
 keras/src/layers/attention/additive_attention_test.py::AdditiveAttentionTest::test_attention_basics
 keras/src/layers/regularization/alpha_dropout_test.py::AlphaDropoutTest::test_alpha_dropout_basics
