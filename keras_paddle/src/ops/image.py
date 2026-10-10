@@ -1183,3 +1183,95 @@ def sobel_edges(images, data_format=None):
     if dtype != compute_dtype:
         edges = edges.cast(to_paddle_dtype(dtype))
     return edges
+
+
+def _create_gaussian_kernel(size, sigma, dtype):
+    x = paddle.arange(size, dtype=dtype)
+    x = x - (size - 1) / 2.0
+    gauss_1d = paddle.exp(-(x**2) / (2.0 * sigma**2))
+    gauss_1d = gauss_1d / paddle.sum(gauss_1d)
+    kernel = paddle.outer(gauss_1d, gauss_1d)
+    return kernel
+
+
+def ssim(
+    image1,
+    image2,
+    max_val=1.0,
+    filter_size=11,
+    filter_sigma=1.5,
+    k1=0.01,
+    k2=0.03,
+    data_format=None,
+):
+    data_format = standardize_data_format(data_format)
+    image1 = convert_to_tensor(image1)
+    image2 = convert_to_tensor(image2)
+
+    original_dtype = standardize_dtype(image1.dtype)
+    compute_dtype = result_type(original_dtype, "float32")
+    image1 = image1.cast(to_paddle_dtype(compute_dtype))
+    image2 = image2.cast(to_paddle_dtype(compute_dtype))
+
+    if len(image1.shape) not in (3, 4):
+        raise ValueError(
+            "Invalid image1 rank: expected rank 3 or 4. "
+            f"Received: image1.shape={image1.shape}"
+        )
+    if len(image2.shape) not in (3, 4):
+        raise ValueError(
+            "Invalid image2 rank: expected rank 3 or 4. "
+            f"Received: image2.shape={image2.shape}"
+        )
+
+    unbatched = len(image1.shape) == 3
+    if unbatched:
+        image1 = paddle.unsqueeze(image1, axis=0)
+        image2 = paddle.unsqueeze(image2, axis=0)
+
+    if data_format == "channels_first":
+        image1 = paddle.transpose(image1, [0, 2, 3, 1])
+        image2 = paddle.transpose(image2, [0, 2, 3, 1])
+
+    shape = list(image1.shape)
+    batch_size = shape[0]
+    height = shape[1]
+    width = shape[2]
+    channels = shape[3]
+
+    kernel = _create_gaussian_kernel(filter_size, filter_sigma, compute_dtype)
+    kernel_nchw = paddle.reshape(kernel, [1, 1, filter_size, filter_size])
+
+    c1 = (k1 * max_val) ** 2
+    c2 = (k2 * max_val) ** 2
+
+    image1_t = paddle.transpose(image1, [0, 3, 1, 2])
+    image2_t = paddle.transpose(image2, [0, 3, 1, 2])
+    image1_ch = paddle.reshape(image1_t, [-1, 1, height, width])
+    image2_ch = paddle.reshape(image2_t, [-1, 1, height, width])
+
+    def _dw(img):
+        return F.conv2d(img, kernel_nchw, padding="valid")
+
+    mu1 = _dw(image1_ch)
+    mu2 = _dw(image2_ch)
+    mu1_sq = mu1 * mu1
+    mu2_sq = mu2 * mu2
+    mu1_mu2 = mu1 * mu2
+
+    sigma1_sq = _dw(image1_ch * image1_ch) - mu1_sq
+    sigma2_sq = _dw(image2_ch * image2_ch) - mu2_sq
+    sigma12 = _dw(image1_ch * image2_ch) - mu1_mu2
+
+    numerator = (2.0 * mu1_mu2 + c1) * (2.0 * sigma12 + c2)
+    denominator = (mu1_sq + mu2_sq + c1) * (sigma1_sq + sigma2_sq + c2)
+    ssim_map = numerator / denominator
+
+    ssim_val = paddle.mean(ssim_map, axis=[1, 2, 3])
+    ssim_per_image = paddle.reshape(ssim_val, [batch_size, channels])
+    ssim_result = paddle.mean(ssim_per_image, axis=-1)
+
+    if unbatched:
+        ssim_result = paddle.squeeze(ssim_result, axis=0)
+
+    return ssim_result.cast(to_paddle_dtype(original_dtype))
