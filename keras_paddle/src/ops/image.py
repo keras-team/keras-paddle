@@ -9,8 +9,6 @@ import paddle.nn.functional as F
 from keras.src.backend.common.dtypes import result_type
 from keras.src.backend.common.variables import standardize_dtype
 from keras.src.backend.config import standardize_data_format
-from keras.src.random.seed_generator import draw_seed
-from keras_paddle.src.ops.core import convert_to_numpy
 from keras_paddle.src.ops.core import convert_to_tensor
 from keras_paddle.src.ops.core import to_paddle_dtype
 
@@ -505,9 +503,112 @@ def affine_transform(
     fill_value=0,
     data_format=None,
 ):
-    raise NotImplementedError(
-        "`affine_transform` is not supported with paddle backend"
+    data_format = standardize_data_format(data_format)
+    if interpolation not in AFFINE_TRANSFORM_INTERPOLATIONS:
+        raise ValueError(
+            "Invalid value for argument `interpolation`. Expected of one "
+            f"{set(AFFINE_TRANSFORM_INTERPOLATIONS)}. Received: "
+            f"interpolation={interpolation}"
+        )
+    if fill_mode not in AFFINE_TRANSFORM_FILL_MODES:
+        raise ValueError(
+            "Invalid value for argument `fill_mode`. Expected of one "
+            f"{AFFINE_TRANSFORM_FILL_MODES}. Received: fill_mode={fill_mode}"
+        )
+
+    images = convert_to_tensor(images)
+    transform = convert_to_tensor(transform)
+
+    if images.ndim not in (3, 4):
+        raise ValueError(
+            "Invalid images rank: expected rank 3 (single image) "
+            "or rank 4 (batch of images). Received input with shape: "
+            f"images.shape={images.shape}"
+        )
+    if transform.ndim not in (1, 2):
+        raise ValueError(
+            "Invalid transform rank: expected rank 1 (single transform) "
+            "or rank 2 (batch of transforms). Received input with shape: "
+            f"transform.shape={transform.shape}"
+        )
+
+    # The index grids and `einsum` have no float16/bfloat16 CPU kernels,
+    # so the transform math runs in float32.
+    input_dtype = standardize_dtype(images.dtype)
+    compute_dtype = result_type(input_dtype, "float32")
+    images = images.cast(to_paddle_dtype(compute_dtype))
+    transform = transform.cast(to_paddle_dtype(compute_dtype))
+
+    # unbatched case
+    need_squeeze = False
+    if images.ndim == 3:
+        images = images.unsqueeze(0)
+        need_squeeze = True
+    if transform.ndim == 1:
+        transform = transform.unsqueeze(0)
+
+    if data_format == "channels_first":
+        images = paddle.transpose(images, [0, 2, 3, 1])
+
+    batch_size = images.shape[0]
+
+    # get indices
+    meshgrid = paddle.meshgrid(
+        *[
+            paddle.arange(size, dtype=to_paddle_dtype(compute_dtype))
+            for size in images.shape[1:]
+        ],
+        indexing="ij",
     )
+    indices = paddle.concat(
+        [paddle.unsqueeze(x, axis=-1) for x in meshgrid], axis=-1
+    )
+    indices = indices.tile([batch_size, 1, 1, 1, 1])
+
+    # swap the values
+    a0 = transform[:, 0].clone()
+    a2 = transform[:, 2].clone()
+    b1 = transform[:, 4].clone()
+    b2 = transform[:, 5].clone()
+    transform = transform.clone()
+    transform[:, 0] = b1
+    transform[:, 2] = b2
+    transform[:, 4] = a0
+    transform[:, 5] = a2
+
+    # deal with transform
+    transform = paddle.nn.functional.pad(
+        transform, pad=[0, 0, 0, 1], mode="constant", value=1
+    )
+    transform = paddle.reshape(transform, [batch_size, 3, 3])
+    offset = transform[:, 0:2, 2].clone()
+    offset = paddle.nn.functional.pad(offset, pad=[0, 0, 0, 1])
+    transform[:, 0:2, 2] = 0
+
+    # transform the indices
+    coordinates = paddle.einsum("Bhwij, Bjk -> Bhwik", indices, transform)
+    coordinates = paddle.moveaxis(coordinates, source=-1, destination=1)
+    coordinates = coordinates + offset.reshape([*offset.shape, 1, 1, 1])
+
+    affined = paddle.stack(
+        [
+            map_coordinates(
+                images[i],
+                coordinates[i],
+                order=AFFINE_TRANSFORM_INTERPOLATIONS[interpolation],
+                fill_mode=fill_mode,
+                fill_value=fill_value,
+            )
+            for i in range(batch_size)
+        ],
+        axis=0,
+    )
+
+    if data_format == "channels_first":
+        affined = paddle.transpose(affined, [0, 3, 1, 2])
+    if need_squeeze:
+        affined = affined.squeeze(0)
+    return affined.cast(to_paddle_dtype(input_dtype))
 
 
 def rgb_to_hsv(images, data_format=None):
@@ -969,129 +1070,9 @@ def elastic_transform(
     seed=None,
     data_format=None,
 ):
-    data_format = standardize_data_format(data_format)
-    if interpolation not in AFFINE_TRANSFORM_INTERPOLATIONS:
-        raise ValueError(
-            "Invalid value for argument `interpolation`. Expected of one "
-            f"{set(AFFINE_TRANSFORM_INTERPOLATIONS)}. Received: "
-            f"interpolation={interpolation}"
-        )
-    if fill_mode not in AFFINE_TRANSFORM_FILL_MODES:
-        raise ValueError(
-            "Invalid value for argument `fill_mode`. Expected of one "
-            f"{AFFINE_TRANSFORM_FILL_MODES}. Received: fill_mode={fill_mode}"
-        )
-    if images.ndim not in (3, 4):
-        raise ValueError(
-            "Invalid images rank: expected rank 3 (single image) "
-            "or rank 4 (batch of images). Received input with shape: "
-            f"images.shape={images.shape}"
-        )
-
-    images = convert_to_tensor(images)
-    alpha = convert_to_tensor(alpha, dtype=images.dtype)
-    sigma = convert_to_tensor(sigma, dtype=images.dtype)
-    input_dtype = standardize_dtype(images.dtype)
-    # The displacement fields are built with `normal`, `gaussian_blur` and
-    # `map_coordinates`; Paddle has no float16/bfloat16 CPU kernels for
-    # several of these, so compute in float32 and cast back at the end.
-    if input_dtype in ("float16", "bfloat16"):
-        compute_dtype = "float32"
-    else:
-        compute_dtype = input_dtype
-    images = images.cast(to_paddle_dtype(compute_dtype))
-    alpha = alpha.cast(to_paddle_dtype(compute_dtype))
-    sigma = sigma.cast(to_paddle_dtype(compute_dtype))
-
-    kernel_size = (int(6 * sigma) | 1, int(6 * sigma) | 1)
-
-    need_squeeze = False
-    if images.ndim == 3:
-        images = images.unsqueeze(0)
-        need_squeeze = True
-
-    if data_format == "channels_last":
-        batch_size, height, width, channels = images.shape
-        channel_axis = -1
-    else:
-        batch_size, channels, height, width = images.shape
-        channel_axis = 1
-
-    seed = draw_seed(seed)
-    if isinstance(seed, paddle.Tensor):
-        seed = convert_to_numpy(seed)
-    seed_value = int(seed[0]) if isinstance(seed, np.ndarray) else int(seed)
-    paddle.seed(seed_value)
-    dx = (
-        paddle.normal(mean=0.0, std=1.0, shape=[batch_size, height, width])
-        * sigma
+    raise NotImplementedError(
+        "`elastic_transform` is not supported with paddle backend"
     )
-    dy = (
-        paddle.normal(mean=0.0, std=1.0, shape=[batch_size, height, width])
-        * sigma
-    )
-
-    dx = gaussian_blur(
-        dx.unsqueeze(channel_axis),
-        kernel_size=kernel_size,
-        sigma=(sigma, sigma),
-        data_format=data_format,
-    )
-    dy = gaussian_blur(
-        dy.unsqueeze(channel_axis),
-        kernel_size=kernel_size,
-        sigma=(sigma, sigma),
-        data_format=data_format,
-    )
-
-    dx = dx.squeeze()
-    dy = dy.squeeze()
-
-    x, y = paddle.meshgrid(
-        paddle.arange(width, dtype=to_paddle_dtype(compute_dtype)),
-        paddle.arange(height, dtype=to_paddle_dtype(compute_dtype)),
-        indexing="xy",
-    )
-    x = x.unsqueeze(0)
-    y = y.unsqueeze(0)
-
-    distorted_x = x + alpha * dx
-    distorted_y = y + alpha * dy
-
-    transformed_images = paddle.zeros_like(images)
-
-    if data_format == "channels_last":
-        for i in range(channels):
-            transformed_images[..., i] = paddle.stack(
-                [
-                    map_coordinates(
-                        images[b, ..., i],
-                        [distorted_y[b], distorted_x[b]],
-                        order=AFFINE_TRANSFORM_INTERPOLATIONS[interpolation],
-                        fill_mode=fill_mode,
-                        fill_value=fill_value,
-                    )
-                    for b in range(batch_size)
-                ]
-            )
-    else:
-        for i in range(channels):
-            transformed_images[:, i, :, :] = paddle.stack(
-                [
-                    map_coordinates(
-                        images[b, i, ...],
-                        [distorted_y[b], distorted_x[b]],
-                        order=AFFINE_TRANSFORM_INTERPOLATIONS[interpolation],
-                        fill_mode=fill_mode,
-                        fill_value=fill_value,
-                    )
-                    for b in range(batch_size)
-                ]
-            )
-
-    if need_squeeze:
-        transformed_images = transformed_images.squeeze(0)
-    return transformed_images.cast(to_paddle_dtype(input_dtype))
 
 
 def scale_and_translate(
