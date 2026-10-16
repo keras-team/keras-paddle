@@ -463,10 +463,6 @@ keras/src/ops/numpy_test.py::NumpyDtypeTest::test_add_('uint8', 'uint16')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_add_('uint8', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_add_python_types_uint16
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_add_python_types_uint32
-keras/src/ops/numpy_test.py::NumpyDtypeTest::test_amax_uint16
-keras/src/ops/numpy_test.py::NumpyDtypeTest::test_amax_uint32
-keras/src/ops/numpy_test.py::NumpyDtypeTest::test_amin_uint16
-keras/src/ops/numpy_test.py::NumpyDtypeTest::test_amin_uint32
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_append_('uint16', 'bool')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_append_('uint16', 'uint32')
 keras/src/ops/numpy_test.py::NumpyDtypeTest::test_append_('uint32', 'bool')
