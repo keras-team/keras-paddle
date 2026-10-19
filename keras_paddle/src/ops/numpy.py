@@ -3741,14 +3741,6 @@ def min(x, axis=None, keepdims=False, initial=None):
     return result
 
 
-def amin(x, axis=None, keepdims=False):
-    return min(x, axis=axis, keepdims=keepdims)
-
-
-def amax(x, axis=None, keepdims=False):
-    return max(x, axis=axis, keepdims=keepdims)
-
-
 def var(x, axis=None, keepdims=False):
     x = convert_to_tensor(x)
     if isinstance(axis, tuple) and len(axis) == 0:
