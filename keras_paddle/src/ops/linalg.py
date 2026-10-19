@@ -1,7 +1,7 @@
 import paddle
 
-from keras.src.backend.common import dtypes
-from keras.src.backend.common.variables import standardize_dtype
+from keras.src.backend.common import result_type
+from keras.src.backend.common import standardize_dtype
 from keras_paddle.src.ops.core import convert_to_tensor
 from keras_paddle.src.ops.core import to_paddle_dtype
 
@@ -138,7 +138,7 @@ def norm(x, ord=None, axis=None, keepdims=False):
     x = convert_to_tensor(x)
     dtype = standardize_dtype(x.dtype)
     if "int" in dtype or dtype == "bool":
-        dtype = dtypes.result_type(x.dtype, "float32")
+        dtype = result_type(x.dtype, "float32")
         x = x.cast(to_paddle_dtype(dtype))
     ndim = x.ndim
 

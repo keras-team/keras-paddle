@@ -1,8 +1,8 @@
 import paddle
 
 from keras.src.backend.common import KerasVariable
-from keras.src.backend.common.stateless_scope import get_stateless_scope
-from keras.src.backend.common.stateless_scope import in_stateless_scope
+from keras.src.backend.common import get_stateless_scope
+from keras.src.backend.common import in_stateless_scope
 from keras_paddle.src.ops.core import convert_to_numpy
 from keras_paddle.src.ops.core import convert_to_tensor
 
