@@ -6,8 +6,8 @@ import numpy as np
 import paddle
 import paddle.nn.functional as F
 
-from keras.src.backend.common.dtypes import result_type
-from keras.src.backend.common.variables import standardize_dtype
+from keras.src.backend.common import result_type
+from keras.src.backend.common import standardize_dtype
 from keras.src.backend.config import standardize_data_format
 from keras_paddle.src.ops.core import convert_to_tensor
 from keras_paddle.src.ops.core import to_paddle_dtype

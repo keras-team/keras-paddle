@@ -5,13 +5,13 @@ import numpy as np
 import paddle
 import paddle.nn.functional as F
 
-from keras.src import backend
+from keras.src.backend import config
+from keras.src.backend.common import result_type
+from keras.src.backend.common import standardize_dtype
 from keras.src.backend.common.backend_utils import canonicalize_axis
 from keras.src.backend.common.backend_utils import (
     compute_conv_transpose_output_crops_for_torch,
 )
-from keras.src.backend.common.dtypes import result_type
-from keras.src.backend.config import floatx
 from keras_paddle.src.ops.core import cast
 from keras_paddle.src.ops.core import convert_to_tensor
 from keras_paddle.src.ops.core import needs_reduced_precision_upcast
@@ -145,7 +145,7 @@ def hard_tanh(x):
 def one_hot(x, num_classes, axis=-1, dtype=None, sparse=False):
     if sparse:
         raise ValueError("Unsupported value `sparse=True` with paddle backend")
-    dtype = dtype or floatx()
+    dtype = dtype or config.floatx()
     x = convert_to_tensor(x, dtype="int64")
     # Paddle's `F.one_hot` raises an error for negative or out-of-range
     # indices, so clamp the indices and zero out the invalid rows afterwards.
@@ -789,7 +789,7 @@ def moments(x, axes, keepdims=False, synchronized=False):
     # The dynamic range of float16 is too limited for statistics (and
     # paddle has no float16/bfloat16 CPU kernel for `mean`/`var`), so
     # compute in float32 and clip before casting back.
-    orig_dtype = backend.standardize_dtype(x.dtype)
+    orig_dtype = standardize_dtype(x.dtype)
     need_cast = orig_dtype in ("float16", "bfloat16")
     if need_cast:
         x = x.cast("float32")
@@ -1203,7 +1203,7 @@ def psnr(x1, x2, max_val):
 
 
 def _get_large_negative(dtype):
-    dtype = backend.standardize_dtype(dtype)
+    dtype = standardize_dtype(dtype)
     val = 65500.0 if dtype == "float16" else 3.38953e38
     return paddle.to_tensor(val * -0.7, dtype=to_paddle_dtype(dtype))
 
@@ -1232,12 +1232,10 @@ def _apply_masks(logits, mask, is_causal):
 
 def _dot_product_attention_xla(query, key, value, bias, mask, is_causal, scale):
     original_dtype = key.dtype
-    logits_dtype = backend.result_type(
-        backend.standardize_dtype(query.dtype), "float32"
-    )
+    logits_dtype = result_type(standardize_dtype(query.dtype), "float32")
     # `einsum` lacks CPU kernels for reduced precision, so accumulate the
     # logits in a wider dtype.
-    if backend.standardize_dtype(key.dtype) in ("float16", "bfloat16"):
+    if standardize_dtype(key.dtype) in ("float16", "bfloat16"):
         query = query.cast("float32")
         key = key.cast("float32")
         value = value.cast("float32")
@@ -1253,7 +1251,7 @@ def _dot_product_attention_xla(query, key, value, bias, mask, is_causal, scale):
     # Softmax is always carried out in fp32.
     padded_logits = padded_logits.cast("float32")
     probs = F.softmax(padded_logits, axis=-1).cast(original_dtype)
-    if backend.standardize_dtype(probs.dtype) in ("float16", "bfloat16"):
+    if standardize_dtype(probs.dtype) in ("float16", "bfloat16"):
         probs = probs.cast("float32")
         value = value.cast("float32")
     encoded = paddle.einsum("BNTS,BSNH->BTNH", probs, value)
@@ -1280,10 +1278,10 @@ def dot_product_attention(
             f"Received: query.shape={query.shape}, key.shape={key.shape}, "
             f"value.shape={value.shape}."
         )
-    compute_dtype = backend.result_type(
-        backend.standardize_dtype(query.dtype),
-        backend.standardize_dtype(key.dtype),
-        backend.standardize_dtype(value.dtype),
+    compute_dtype = result_type(
+        standardize_dtype(query.dtype),
+        standardize_dtype(key.dtype),
+        standardize_dtype(value.dtype),
     )
     paddle_compute_dtype = to_paddle_dtype(compute_dtype)
     query = query.cast(paddle_compute_dtype)
@@ -1349,7 +1347,7 @@ def binary_crossentropy(target, output, from_logits=False):
     # float32 (matches numpy/JAX behavior where integer/bool outputs are
     # promoted to float before the loss computation).
     orig_dtype = output.dtype
-    orig_dtype_str = backend.standardize_dtype(orig_dtype)
+    orig_dtype_str = standardize_dtype(orig_dtype)
     compute_in_float32 = orig_dtype_str not in ("float32", "float64")
     if compute_in_float32:
         target = target.cast("float32")
@@ -1361,7 +1359,7 @@ def binary_crossentropy(target, output, from_logits=False):
             output, target, reduction="none"
         )
     else:
-        epsilon = backend.epsilon()
+        epsilon = config.epsilon()
         output = paddle.clip(output, min=epsilon, max=1.0 - epsilon)
         result = F.binary_cross_entropy(output, target, reduction="none")
     if compute_in_float32:
@@ -1399,7 +1397,7 @@ def categorical_crossentropy(target, output, from_logits=False, axis=-1):
         # Normalize so that the values form a proper probability
         # distribution, matching the other Keras backends.
         output = output / paddle.sum(output, axis=axis, keepdim=True)
-        epsilon = backend.epsilon()
+        epsilon = config.epsilon()
         output = paddle.clip(output, min=epsilon, max=1.0 - epsilon)
         log_prob = paddle.log(output).cast(to_paddle_dtype(orig_dtype))
         target = target.cast(log_prob.dtype)
@@ -1432,7 +1430,7 @@ def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
         if needs_reduced_precision_upcast(output):
             output = output.cast("float32")
         output = output / paddle.sum(output, axis=axis, keepdim=True)
-        epsilon = backend.epsilon()
+        epsilon = config.epsilon()
         output = paddle.clip(output, min=epsilon, max=1.0 - epsilon)
         log_prob = paddle.log(output).cast(to_paddle_dtype(orig_dtype))
     target_one_hot = one_hot(
@@ -1553,10 +1551,8 @@ def space_to_depth(x, block_size, data_format="channels_last"):
 
 def rms_normalization(x, scale=None, axis=-1, epsilon=None):
     if epsilon is None:
-        from keras.src.backend.config import epsilon as _epsilon
-
-        epsilon = _epsilon()
-    original_dtype = backend.standardize_dtype(x.dtype)
+        epsilon = config.epsilon()
+    original_dtype = standardize_dtype(x.dtype)
     compute_dtype = result_type(x.dtype, "float32")
     x = convert_to_tensor(x, dtype=compute_dtype)
     if scale is not None:
@@ -1581,9 +1577,7 @@ def normalize(x, axis=-1, order=2, epsilon=None):
     if len(x.shape) == 0:
         x = paddle.unsqueeze(x, axis=0)
     if epsilon is None:
-        from keras.src.backend.config import epsilon as _epsilon
-
-        epsilon = _epsilon()
+        epsilon = config.epsilon()
     if order == 2:
         square_sum = paddle.sum(paddle.square(x), axis=axis, keepdim=True)
         inv_norm = paddle.rsqrt(

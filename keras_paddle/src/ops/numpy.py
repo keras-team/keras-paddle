@@ -2188,7 +2188,7 @@ def ldexp(x1, x2):
     x1 = convert_to_tensor(x1)
     x2 = convert_to_tensor(x2)
     float_types = {"float16", "float32", "float64", "bfloat16"}
-    # Result dtype follows dtypes.result_type(x1, x2, float)
+    # Result dtype follows result_type(x1, x2, float)
     dt = _get_promoted_dtype(x1, x2)
     target = dt if dt in float_types else "float32"
     # Compute in float64 when 64-bit inputs are involved to avoid

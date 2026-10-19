@@ -3,8 +3,8 @@ import math
 
 import paddle
 
-from keras.src.backend import standardize_dtype
-from keras.src.backend.common import dtypes
+from keras.src.backend.common import result_type
+from keras.src.backend.common import standardize_dtype
 from keras_paddle.src.ops.core import convert_to_tensor
 from keras_paddle.src.ops.core import needs_reduced_precision_upcast
 from keras_paddle.src.ops.core import to_paddle_dtype
@@ -457,7 +457,7 @@ def cdist(x, y):
         raise ValueError("`cdist` inputs must have rank >= 2")
     if x.shape[-1] != y.shape[-1]:
         raise ValueError("Last dimension of inputs to `cdist` must match")
-    result_dtype = dtypes.result_type(
+    result_dtype = result_type(
         standardize_dtype(x.dtype), standardize_dtype(y.dtype), float
     )
     # Integer inputs have to be accumulated in floating point, and
@@ -475,7 +475,7 @@ def cdist(x, y):
 def gammainc(x1, x2):
     x1 = convert_to_tensor(x1)
     x2 = convert_to_tensor(x2)
-    result_dtype = dtypes.result_type(x1.dtype, x2.dtype, float)
+    result_dtype = result_type(x1.dtype, x2.dtype, float)
     compute_dtype = result_dtype
     if compute_dtype not in ("float32", "float64"):
         compute_dtype = "float32"
